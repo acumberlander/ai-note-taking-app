@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
-import { generateEmbedding } from "../services/aiService";
 
 export const createNote = async (
   req: Request,
@@ -14,13 +13,14 @@ export const createNote = async (
   }
 
   try {
-    const embedding = await generateEmbedding(content);
-
-    const note = new Note(title, content, embedding);
+    const note = new Note(title, content);
+    console.log(note);
+    console.log('now to save it');
     const savedNote = await note.save();
-
+    console.log(savedNote);
     res.json(savedNote);
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: "Error creating note" });
   }
 };
@@ -42,20 +42,25 @@ export const getNotes = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+//Does a keyword search for now.
 export const searchNotes = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { query } = req.query;
+    const { query } = req.body;
+    console.log("query: ",query);
+    console.log("typeof query: ", typeof query);
+
     if (!query || typeof query !== "string") {
       res.status(400).json({ error: "Query parameter is required" });
       return;
     }
 
-    const embedding = await generateEmbedding(query);
-    const notes = await Note.searchByEmbedding(embedding);
-
+    
+    const notes = await Note.searchByKeyword(query);
+    console.log("Keyword Search Results: ", notes);
+    
     res.json(notes);
   } catch (err) {
     res.status(500).json({ error: "Error searching notes" });
