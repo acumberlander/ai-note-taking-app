@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
 
+/**
+ * Note controller that saves a note to the postgres database
+ * @param req
+ * @param res
+ */
 export const createNote = async (
   req: Request,
   res: Response
@@ -14,10 +19,7 @@ export const createNote = async (
 
   try {
     const note = new Note(title, content);
-    console.log(note);
-    console.log('now to save it');
     const savedNote = await note.save();
-    console.log(savedNote);
     res.json(savedNote);
   } catch (err) {
     console.log(err);
@@ -25,6 +27,11 @@ export const createNote = async (
   }
 };
 
+/**
+ * Note controller that fetches all the notes from the postgres database
+ * @param req
+ * @param res
+ */
 export const getNotes = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
@@ -38,31 +45,80 @@ export const getNotes = async (req: Request, res: Response): Promise<void> => {
     const notes = await Note.findPaginated(page, limit);
     res.json(notes);
   } catch (err) {
-    res.status(500).json({ error: "Error fetching notes" });
+    res.status(500).json({ error: "Error fetching notes", err });
   }
 };
 
-//Does a keyword search for now.
+/**
+ * Note controller that fetches a note from the postgres database based on the id passed in.
+ * @param req
+ * @param res
+ */
+export const getNoteById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const note = await Note.findById(parseInt(id));
+    res.json(note);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching note by id", err });
+  }
+};
+
+/**
+ * Note controller that fetches all the notes from the postgres database that match
+ * the keywords of the query in the request body.
+ * @param req
+ * @param res
+ */
 export const searchNotes = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { query } = req.body;
-    console.log("query: ",query);
-    console.log("typeof query: ", typeof query);
 
     if (!query || typeof query !== "string") {
       res.status(400).json({ error: "Query parameter is required" });
       return;
     }
-
-    
     const notes = await Note.searchByKeyword(query);
-    console.log("Keyword Search Results: ", notes);
-    
+
     res.json(notes);
   } catch (err) {
     res.status(500).json({ error: "Error searching notes" });
+  }
+};
+
+/**
+ * Note controller that deletes a note from the postgres database based on the id
+ * in the request parameter.
+ * @param req
+ * @param res
+ */
+export const deleteNoteById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+
+  if (!id || isNaN(Number(id))) {
+    res.status(400).json({ error: "Invalid note ID" });
+    return;
+  }
+
+  try {
+    const deleted = await Note.deleteNoteById(Number(id));
+
+    if (deleted) {
+      res.status(200).json({ message: "Note deleted successfully" });
+    } else {
+      res.status(404).json({ error: "Note not found" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error deleting note" });
   }
 };
