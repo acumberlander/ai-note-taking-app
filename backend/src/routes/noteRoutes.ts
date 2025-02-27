@@ -11,8 +11,8 @@ const router = express.Router();
 
 router.post("/", createNote);
 router.get("/", getNotes);
+router.get("/search", searchNotes);
 router.get("/:id", getNoteById);
 router.delete("/:id", deleteNoteById);
-router.get("/search", searchNotes);
 
 export { router as noteRoutes };
