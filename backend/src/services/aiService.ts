@@ -1,4 +1,4 @@
-import { OpenAI } from "openai";
+/*import { OpenAI } from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -16,4 +16,4 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
     console.error("Error generating embedding:", error);
     throw new Error("Failed to generate embedding");
   }
-};
+};*/
