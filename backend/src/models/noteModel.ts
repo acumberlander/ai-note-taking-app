@@ -83,6 +83,28 @@ export class Note {
     );
   }
 
+  
+  /**
+   * Note class method that updates a note based on the id.
+   * @param id - The ID of the note to update.
+   * @param title - The new title of the note.
+   * @param content - The new content of the note.
+   * @returns The updated note or null if not found.
+   */
+  static async updateNoteById(id: number, title: string, content: string): Promise<Note | null> {
+    const result = await pool.query(
+      `UPDATE notes 
+       SET title = $1, content = $2 
+       WHERE id = $3 
+       RETURNING id, title, content`,
+      [title, content, id]
+    );
+
+    if (result.rows.length === 0) return null;
+
+    return new Note(result.rows[0].title, result.rows[0].content, result.rows[0].id);
+  }
+
   /**
    * Note class method that deletes note based on the id.
    * @param id
@@ -94,3 +116,5 @@ export class Note {
     return (result.rowCount ?? 0) > 0;
   }
 }
+
+
