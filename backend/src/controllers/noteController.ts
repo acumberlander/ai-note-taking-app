@@ -27,13 +27,15 @@ export const createNote = async (
   }
 };
 
-
 /**
  * Note controller that updates a note in the database.
  * @param req
  * @param res
  */
-export const updateNote = async (req: Request, res: Response): Promise<void> => {
+export const updateNote = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params;
   const { title, content } = req.body;
 
@@ -61,7 +63,6 @@ export const updateNote = async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ error: "Error updating note" });
   }
 };
-
 
 /**
  * Note controller that fetches all the notes from the postgres database
@@ -158,4 +159,3 @@ export const deleteNoteById = async (
     res.status(500).json({ error: "Error deleting note" });
   }
 };
-

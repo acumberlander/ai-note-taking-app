@@ -2,27 +2,19 @@
 
 import { useEffect } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
+import Note from "@/components/Note";
 
 export default function NoteList() {
-  const { notes, fetchNotes, deleteNote } = useNoteStore();
+  const { notes, fetchNotes } = useNoteStore();
 
   useEffect(() => {
     fetchNotes();
   }, [fetchNotes]);
 
   return (
-    <div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
       {notes.map((note) => (
-        <div key={note.id} className="p-4 border rounded mb-2">
-          <h2 className="text-xl font-bold">{note.title}</h2>
-          <p>{note.content}</p>
-          <button
-            onClick={() => deleteNote(note.id)}
-            className="mt-2 bg-red-500 text-white px-4 py-1 rounded"
-          >
-            Delete
-          </button>
-        </div>
+        <Note key={note.id} note={note} />
       ))}
     </div>
   );
