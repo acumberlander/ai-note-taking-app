@@ -19,11 +19,14 @@ export class Note {
     const result = await pool.query(
       `INSERT INTO notes (title, content) 
        VALUES ($1, $2) 
-       RETURNING title, content, id`,
+       RETURNING *`,
       [this.title, this.content]
     );
-    console.log("saving in db");
-    return new Note(result.rows[0].title, result.rows[0].content);
+    return new Note(
+      result.rows[0].title,
+      result.rows[0].content,
+      result.rows[0].id
+    );
   }
 
   /**
@@ -83,7 +86,6 @@ export class Note {
     );
   }
 
-  
   /**
    * Note class method that updates a note based on the id.
    * @param id - The ID of the note to update.
@@ -91,7 +93,11 @@ export class Note {
    * @param content - The new content of the note.
    * @returns The updated note or null if not found.
    */
-  static async updateNoteById(id: number, title: string, content: string): Promise<Note | null> {
+  static async updateNoteById(
+    id: number,
+    title: string,
+    content: string
+  ): Promise<Note | null> {
     const result = await pool.query(
       `UPDATE notes 
        SET title = $1, content = $2 
@@ -102,7 +108,11 @@ export class Note {
 
     if (result.rows.length === 0) return null;
 
-    return new Note(result.rows[0].title, result.rows[0].content, result.rows[0].id);
+    return new Note(
+      result.rows[0].title,
+      result.rows[0].content,
+      result.rows[0].id
+    );
   }
 
   /**
@@ -116,5 +126,3 @@ export class Note {
     return (result.rowCount ?? 0) > 0;
   }
 }
-
-

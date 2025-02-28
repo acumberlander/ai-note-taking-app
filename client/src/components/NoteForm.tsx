@@ -11,13 +11,16 @@ export default function NoteForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return;
-    await addNote(title, content);
+    await addNote({ title, content });
     setTitle("");
     setContent("");
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-gray-100 p-4 rounded-lg">
+    <form
+      onSubmit={handleSubmit}
+      className="note-form bg-gray-100 p-4 rounded-lg"
+    >
       <input
         type="text"
         placeholder="Title"
