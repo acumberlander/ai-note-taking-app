@@ -115,10 +115,16 @@ export const searchNotes = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { query } = req.body;
+    const { query } = req.query;
 
-    if (!query || typeof query !== "string") {
-      res.status(400).json({ error: "Query parameter is required" });
+    if (!query) {
+      const allNotes = await Note.findPaginated(1, 10);
+      res.json(allNotes);
+      return;
+    }
+
+    if (typeof query !== "string") {
+      res.status(400).json({ error: "Query parameter must be a string" });
       return;
     }
     const notes = await Note.searchByKeyword(query);
