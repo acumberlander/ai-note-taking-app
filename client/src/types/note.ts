@@ -12,4 +12,5 @@ export type NoteStore = {
   addNote: ({ title, content }: NewNote) => Promise<void>;
   deleteNote: (id: number) => Promise<void>;
   updateNote: (id: number, { title, content }: NewNote) => Promise<void>;
+  searchNotes: (query: string) => Promise<void>;
 };

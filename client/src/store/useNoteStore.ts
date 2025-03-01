@@ -3,6 +3,7 @@ import {
   _createNote,
   _deleteNoteById,
   _fetchAllNotes,
+  _searchNotes,
   _updateNote,
 } from "@/app/api/postgresRequests";
 import { NoteStore } from "@/types/note";
@@ -31,6 +32,12 @@ export const useNoteStore = create<NoteStore>((set) => ({
     const updatedNote = await _updateNote(id, { title, content });
     set((state) => ({
       notes: [...state.notes.filter((note) => note.id !== id), updatedNote],
+    }));
+  },
+  searchNotes: async (query) => {
+    const queriedNotes = await _searchNotes(query);
+    set(() => ({
+      notes: queriedNotes,
     }));
   },
 }));
