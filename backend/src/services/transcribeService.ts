@@ -1,4 +1,4 @@
-import AWS from "aws-sdk";
+/*import AWS from "aws-sdk";
 
 AWS.config.update({ region: "us-east-1" });
 
@@ -35,3 +35,4 @@ export const transcribeAudio = async (
     throw new Error("Transcription service error");
   }
 };
+*/
