@@ -95,7 +95,7 @@ export default function NoteForm() {
           type="submit"
           className="w-full bg-blue-500 text-white p-2 rounded"
         >
-          {isSearch ? "Search (optional)" : "Add Note"}
+          {isSearch ? "Search" : "Add Note"}
         </button>
       </form>
     </div>

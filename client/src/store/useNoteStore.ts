@@ -4,6 +4,7 @@ import {
   _deleteNoteById,
   _fetchAllNotes,
   _searchNotes,
+  _semanticSearchNotes,
   _updateNote,
 } from "@/app/api/postgresRequests";
 import { NoteStore } from "@/types/note";
@@ -36,8 +37,11 @@ export const useNoteStore = create<NoteStore>((set) => ({
   },
   searchNotes: async (query) => {
     const queriedNotes = await _searchNotes(query);
-    set(() => ({
-      notes: queriedNotes,
-    }));
+    set(() => ({ notes: queriedNotes }));
+  },
+  semanticSearchNotes: async (query) => {
+    console.log("Sending semantic search query:", query);
+    const queriedNotes = await _semanticSearchNotes(query);
+    set({ notes: queriedNotes });
   },
 }));
