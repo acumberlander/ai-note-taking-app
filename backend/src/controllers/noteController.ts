@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
-import { classifyIntent } from "../services/aiService";
+import { classifyIntent, generateSearchResponse } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -118,8 +118,6 @@ export const searchNotes = async (
 ): Promise<void> => {
   const { query } = req.query;
 
-  console.log("Search query:", query); // Debug log
-
   if (!query || typeof query !== "string") {
     console.log("Invalid query - returning all notes");
     const allNotes = await Note.findPaginated(1, 10);
@@ -128,7 +126,6 @@ export const searchNotes = async (
   }
 
   const notes = await Note.searchByKeyword(query);
-  console.log("Found notes:", notes.length);
   res.json(notes);
 };
 
@@ -146,21 +143,33 @@ export const semanticSearchNotes = async (
   try {
     const { query } = req.body;
 
-    if (!query || typeof query !== "string") {
-      res.status(400).json({ error: "Query must be a string" });
+    if (!query || typeof query !== "string" || query.trim() === "") {
+      // Handle the "silent case" directly
+      const notes = await Note.findPaginated(1, 100); // Fetch all notes
+      res.json({
+        notes,
+        message: "I didn't hear anything, so I returned all your notes.",
+      });
       return;
     }
 
     const intent = await classifyIntent(query);
-    console.log(`Detected intent: ${intent}`);
-
     if (intent === "show_all") {
-      const notes = await Note.findPaginated(1, 10);
-      res.json(notes);
-    } else {
-      const notes = await Note.searchByEmbedding(query);
-      res.json(notes);
+      const notes = await Note.findPaginated(1, 100);
+      res.json({
+        notes,
+        message: "Here are all your notes.",
+      });
+      return;
     }
+
+    const notes = await Note.searchByEmbedding(query);
+    const summaryMessage = await generateSearchResponse(query, notes);
+
+    res.json({
+      notes,
+      message: summaryMessage,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error performing semantic search" });

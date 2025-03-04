@@ -1,4 +1,5 @@
 import { OpenAI } from "openai";
+import { Note } from "../models/noteModel";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -53,3 +54,40 @@ Only return "show_all" or "search" as the response. No explanation, no other tex
   if (classification === "show_all") return "show_all";
   return "search";
 };
+
+/**
+ *
+ * @param query
+ * @param notes
+ * @returns
+ */
+export async function generateSearchResponse(
+  query: string,
+  notes: Note[]
+): Promise<string> {
+  const noteTitles = notes.map((n) => `"${n.title}"`).join(", ");
+  const systemPrompt = `
+You are an AI assistant in a note-taking app.
+The user asked: "${query}"
+
+The app found these notes that are relevant to the request: ${noteTitles}
+
+Please write a short, friendly response summarizing this like:
+"Here are all your notes that pertain to [some brief summary of the query]."
+
+Keep the response under 100 characters.
+`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4-turbo",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: query },
+    ],
+    max_tokens: 100,
+  });
+
+  return (
+    completion.choices[0]?.message?.content?.trim() || "Here are your notes."
+  );
+}

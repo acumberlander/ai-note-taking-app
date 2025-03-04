@@ -44,8 +44,9 @@ export const _searchNotes = async (query: string): Promise<Note[]> => {
  * Search for notes by semantics.
  * @param query
  */
-export const _semanticSearchNotes = async (query: string): Promise<Note[]> => {
-  console.log("POSTing to semantic search:", query);
+export const _semanticSearchNotes = async (
+  query: string
+): Promise<{ notes: Note[]; message: string }> => {
   const res = await axios.post(`${baseUrl}/api/notes/semantic-search`, {
     query,
   });
