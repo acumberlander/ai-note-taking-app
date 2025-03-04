@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
+import { classifyIntent } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -110,28 +111,59 @@ export const getNoteById = async (
  * @param req
  * @param res
  */
+// Exact keyword search (used for typed search box)
 export const searchNotes = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  const { query } = req.query;
+
+  console.log("Search query:", query); // Debug log
+
+  if (!query || typeof query !== "string") {
+    console.log("Invalid query - returning all notes");
+    const allNotes = await Note.findPaginated(1, 10);
+    res.json(allNotes);
+    return;
+  }
+
+  const notes = await Note.searchByKeyword(query);
+  console.log("Found notes:", notes.length);
+  res.json(notes);
+};
+
+/**
+ * Note controller that fetches all the notes from the postgres database that match
+ * the query based on the semantics.
+ * @param req
+ * @param res
+ */
+// Semantic search (used for voice search)
+export const semanticSearchNotes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { query } = req.query;
+    const { query } = req.body;
 
-    if (!query) {
-      const allNotes = await Note.findPaginated(1, 10);
-      res.json(allNotes);
+    if (!query || typeof query !== "string") {
+      res.status(400).json({ error: "Query must be a string" });
       return;
     }
 
-    if (typeof query !== "string") {
-      res.status(400).json({ error: "Query parameter must be a string" });
-      return;
-    }
-    const notes = await Note.searchByKeyword(query);
+    const intent = await classifyIntent(query);
+    console.log(`Detected intent: ${intent}`);
 
-    res.json(notes);
+    if (intent === "show_all") {
+      const notes = await Note.findPaginated(1, 10);
+      res.json(notes);
+    } else {
+      const notes = await Note.searchByEmbedding(query);
+      res.json(notes);
+    }
   } catch (err) {
-    res.status(500).json({ error: "Error searching notes" });
+    console.error(err);
+    res.status(500).json({ error: "Error performing semantic search" });
   }
 };
 
