@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import { OpenAI } from "openai";
+import {createNoteFromBackend } from "./noteController";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -53,3 +54,14 @@ export const transcribeAudioFile = async (
     });
   }
 };
+
+export async function sendCreateNoteRequest(content: string) {
+   try {
+        
+        const response = await createNoteFromBackend(content);
+       
+        console.log("Note created:"); //, response.data);
+    } catch (error) {
+        console.error("Error creating note:"); //, error);
+    }
+}

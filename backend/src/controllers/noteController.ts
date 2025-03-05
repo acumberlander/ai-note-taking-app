@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
-import { classifyIntent } from "../services/aiService";
+import { classifyIntent, generateContent, trimCommand } from "../services/aiService";
+import { sendCreateNoteRequest } from "./transcribeController";
+import { generateTitle } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -73,7 +75,7 @@ export const updateNote = async (
 export const getNotes = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const limit = Number(req.query.limit) || 20;
 
     if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
       res.status(400).json({ error: "Invalid pagination parameters" });
@@ -122,7 +124,7 @@ export const searchNotes = async (
 
   if (!query || typeof query !== "string") {
     console.log("Invalid query - returning all notes");
-    const allNotes = await Note.findPaginated(1, 10);
+    const allNotes = await Note.findPaginated(1, 20);
     res.json(allNotes);
     return;
   }
@@ -155,8 +157,16 @@ export const semanticSearchNotes = async (
     console.log(`Detected intent: ${intent}`);
 
     if (intent === "show_all") {
-      const notes = await Note.findPaginated(1, 10);
+      const notes = await Note.findPaginated(1, 20);
       res.json(notes);
+    } else if (intent === "create_note"){
+      //further processing to remove the command
+      const trimmedQuery = await trimCommand(query);
+      sendCreateNoteRequest(trimmedQuery);
+    } else if (intent === "request"){
+      //further processing to get content
+      const newContent = await generateContent(query);
+      sendCreateNoteRequest(newContent);
     } else {
       const notes = await Note.searchByEmbedding(query);
       res.json(notes);
@@ -197,3 +207,22 @@ export const deleteNoteById = async (
     res.status(500).json({ error: "Error deleting note" });
   }
 };
+
+export async function createNoteFromBackend(content: string) {
+  let title = await generateTitle(content);
+
+  // Fallback if title generation fails
+  if (!title || title.trim() === "") {
+      title = content.split(" ").slice(0, 7).join(" ") + "...";
+  }
+
+  try {
+      const note = new Note(title, content);
+      const savedNote = await note.save();
+      console.log("Note saved:", savedNote);
+      return savedNote;
+  } catch (error) {
+      console.error("Error creating note:", error);
+      throw new Error("Failed to create note");
+  }
+}

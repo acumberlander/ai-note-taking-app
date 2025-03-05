@@ -34,22 +34,22 @@ export class Note {
     const formattedEmbedding = JSON.stringify(embedding);
 
     const result = await pool.query(
-      `
-      INSERT INTO notes (title, content, embedding)
-      VALUES ($1, $2, $3::vector)
-      RETURNING *
+        `
+        INSERT INTO notes (title, content, embedding)
+        VALUES ($1, $2, $3::vector)
+        RETURNING *
         `,
-      [this.title, this.content, formattedEmbedding]
+        [this.title, this.content, formattedEmbedding]
     );
 
     return new Note(
-      result.rows[0].title,
-      result.rows[0].content,
-      result.rows[0].id,
-      result.rows[0].embedding,
-      result.rows[0].similarity
+        result.rows[0].title,
+        result.rows[0].content,
+        result.rows[0].id,
+        result.rows[0].embedding,
+        result.rows[0].similarity
     );
-  }
+}
 
   /**
    * Exact keyword search (for regular search bar functionality).
