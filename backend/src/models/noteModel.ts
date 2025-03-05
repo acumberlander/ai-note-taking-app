@@ -38,7 +38,7 @@ export class Note {
       INSERT INTO notes (title, content, embedding)
       VALUES ($1, $2, $3::vector)
       RETURNING *
-        `,
+      `,
       [this.title, this.content, formattedEmbedding]
     );
 
@@ -58,8 +58,10 @@ export class Note {
     query = `%${query.toLowerCase()}%`;
 
     const result = await pool.query(
-      `SELECT * FROM notes 
-         WHERE LOWER(title) LIKE $1 OR LOWER(content) LIKE $1`,
+      `
+      SELECT * FROM notes 
+      WHERE LOWER(title) LIKE $1 OR LOWER(content) LIKE $1
+      `,
       [query]
     );
 
@@ -88,7 +90,7 @@ export class Note {
       ORDER BY similarity ASC
       LIMIT 10
       `,
-      [formattedEmbedding, 0.245]
+      [formattedEmbedding, 0.235]
     );
 
     return result.rows.map(
@@ -104,8 +106,10 @@ export class Note {
     const offset = (page - 1) * limit;
 
     const result = await pool.query(
-      `SELECT * FROM notes 
-             LIMIT $1 OFFSET $2`,
+      `
+      SELECT * FROM notes 
+      LIMIT $1 OFFSET $2
+      `,
       [limit, offset]
     );
 
@@ -143,10 +147,12 @@ export class Note {
     const formattedEmbedding = `[${embedding.join(",")}]`;
 
     const result = await pool.query(
-      `UPDATE notes 
-             SET title = $1, content = $2, embedding = $3::vector
-             WHERE id = $4
-             RETURNING *`,
+      `
+      UPDATE notes 
+      SET title = $1, content = $2, embedding = $3::vector
+      WHERE id = $4
+      RETURNING *
+      `,
       [title, content, formattedEmbedding, id]
     );
 
