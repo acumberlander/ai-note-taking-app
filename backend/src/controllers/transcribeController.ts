@@ -40,11 +40,16 @@ export const transcribeAudioFile = async (
       language: "en",
     });
 
-    console.log("Transcription received:", transcription.text);
-
     fs.unlinkSync(newFilePath);
 
-    res.json({ text: transcription.text });
+    const transcriptionText = transcription.text?.trim().toLowerCase();
+
+    const noiseWords = ["you", "uh", "ah", "hmm", "um"];
+    if (!transcriptionText || noiseWords.includes(transcriptionText)) {
+      res.json({ text: "" });
+    } else {
+      res.json({ text: transcription.text });
+    }
   } catch (error: any) {
     console.error("Transcription Error:", error);
     res.status(500).json({

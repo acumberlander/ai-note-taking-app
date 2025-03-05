@@ -65,8 +65,6 @@ export class Note {
       [query]
     );
 
-    console.log("Keyword search result count:", result.rows.length); // Debug log
-
     return result.rows.map(
       (row) => new Note(row.title, row.content, row.id, row.embedding)
     );

@@ -40,8 +40,8 @@ export const useNoteStore = create<NoteStore>((set) => ({
     set(() => ({ notes: queriedNotes }));
   },
   semanticSearchNotes: async (query) => {
-    console.log("Sending semantic search query:", query);
-    const queriedNotes = await _semanticSearchNotes(query);
-    set({ notes: queriedNotes });
+    const { notes, message } = await _semanticSearchNotes(query);
+    set({ notes, aiResponse: message });
+    return { message };
   },
 }));
