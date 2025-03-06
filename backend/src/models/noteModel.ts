@@ -90,7 +90,7 @@ export class Note {
       ORDER BY similarity ASC
       LIMIT 10
       `,
-      [formattedEmbedding, 0.235]
+      [formattedEmbedding, 0.239]
     );
 
     return result.rows.map(

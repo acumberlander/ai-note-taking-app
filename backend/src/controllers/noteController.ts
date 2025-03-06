@@ -144,8 +144,7 @@ export const semanticSearchNotes = async (
     const { query } = req.body;
 
     if (!query || typeof query !== "string" || query.trim() === "") {
-      // Handle the "silent case" directly
-      const notes = await Note.findPaginated(1, 100); // Fetch all notes
+      const notes = await Note.findPaginated(1, 10);
       res.json({
         notes,
         message: "I didn't hear anything, so I returned all your notes.",
@@ -155,7 +154,7 @@ export const semanticSearchNotes = async (
 
     const intent = await classifyIntent(query);
     if (intent === "show_all") {
-      const notes = await Note.findPaginated(1, 100);
+      const notes = await Note.findPaginated(1, 10);
       res.json({
         notes,
         message: "Here are all your notes.",

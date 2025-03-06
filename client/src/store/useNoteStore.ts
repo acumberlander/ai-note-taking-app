@@ -3,45 +3,50 @@ import {
   _createNote,
   _deleteNoteById,
   _fetchAllNotes,
-  _searchNotes,
   _semanticSearchNotes,
   _updateNote,
 } from "@/app/api/postgresRequests";
 import { NoteStore } from "@/types/note";
 
 export const useNoteStore = create<NoteStore>((set) => ({
-  notes: [],
+  allNotes: [],
+  aiResponse: "",
+  updateAiResponse: (value: string | undefined) => {
+    set(() => ({
+      aiResponse: value,
+    }));
+  },
   fetchNotes: async () => {
     const data = await _fetchAllNotes();
-    set({ notes: data });
+    set({ allNotes: data });
   },
   addNote: async ({ title, content }) => {
     const note = await _createNote({ title, content });
     set((state) => ({
-      notes: [...state.notes, note],
+      allNotes: [...state.allNotes, note],
     }));
   },
   deleteNote: async (id) => {
     const deleteSuccessful = await _deleteNoteById(id);
     if (deleteSuccessful) {
       set((state) => ({
-        notes: state.notes.filter((note) => note.id !== id),
+        allNotes: state.allNotes.filter((note) => note.id !== id),
       }));
     }
   },
   updateNote: async (id, { title, content }) => {
     const updatedNote = await _updateNote(id, { title, content });
     set((state) => ({
-      notes: [...state.notes.filter((note) => note.id !== id), updatedNote],
+      allNotes: state.allNotes.map((note) =>
+        note.id === id ? updatedNote : note
+      ),
     }));
   },
-  searchNotes: async (query) => {
-    const queriedNotes = await _searchNotes(query);
-    set(() => ({ notes: queriedNotes }));
-  },
   semanticSearchNotes: async (query) => {
-    const { notes, message } = await _semanticSearchNotes(query);
-    set({ notes, aiResponse: message });
-    return { message };
+    const result = await _semanticSearchNotes(query);
+    set({
+      allNotes: result.notes,
+      aiResponse: result.message,
+    });
   },
 }));
