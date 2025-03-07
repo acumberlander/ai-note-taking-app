@@ -11,6 +11,7 @@ type NoteFormProps = {
 export default function NoteForm({ setSearchQuery }: NoteFormProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [filter, setFilter] = useState("");
   const [isFilter, setIsFilter] = useState(false);
 
   const { addNote, fetchNotes, updateAiResponse } = useNoteStore(
@@ -18,20 +19,27 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
   );
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFilter(e.target.value);
     setSearchQuery(e.target.value);
+  };
+
+  const clearInputs = () => {
+    setTitle("");
+    setContent("");
+    setFilter("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return;
     await addNote({ title, content });
-    setTitle("");
-    setContent("");
+    clearInputs();
     refreshNotes();
   };
 
   const refreshNotes = async () => {
     setSearchQuery("");
+    clearInputs();
     updateAiResponse("");
     await fetchNotes();
   };
@@ -69,6 +77,7 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
             type="text"
             placeholder="Filter displayed notes"
             onChange={handleSearchChange}
+            value={filter}
             className="w-full p-2 mb-2 border rounded"
           />
         ) : (
