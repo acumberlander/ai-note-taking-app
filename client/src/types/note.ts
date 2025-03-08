@@ -30,5 +30,5 @@ export type NoteStore = {
   addNote: ({ title, content }: NewNote) => Promise<void>;
   deleteNote: (id: number) => Promise<void>;
   updateNote: (id: number, { title, content }: NewNote) => Promise<void>;
-  semanticSearchNotes: (query: string) => Promise<void>;
+  semanticQuery: (query: string) => Promise<void>;
 };

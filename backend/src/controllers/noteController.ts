@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
-import { classifyIntent, generateSearchResponse } from "../services/aiService";
+import {
+  classifyIntent,
+  generateContent,
+  trimCommand,
+  generateQueryResponse,
+} from "../services/aiService";
+import { generateTitle } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -130,21 +136,21 @@ export const searchNotes = async (
 };
 
 /**
- * Note controller that fetches all the notes from the postgres database that match
- * the query based on the semantics.
+ * Note controller that determines what crud actions to take based on the query that's passed in.
  * @param req
  * @param res
  */
 // Semantic search (used for voice search)
-export const semanticSearchNotes = async (
+export const semanticQuery = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { query } = req.body;
+    let notes: Note[] = [];
 
     if (!query || typeof query !== "string" || query.trim() === "") {
-      const notes = await Note.findPaginated(1, 10);
+      notes = await Note.findPaginated(1, 20);
       res.json({
         notes,
         message: "I didn't hear anything, so I returned all your notes.",
@@ -154,16 +160,25 @@ export const semanticSearchNotes = async (
 
     const intent = await classifyIntent(query);
     if (intent === "show_all") {
-      const notes = await Note.findPaginated(1, 10);
+      notes = await Note.findPaginated(1, 20);
       res.json({
         notes,
         message: "Here are all your notes.",
       });
-      return;
+    } else if (intent === "create_note") {
+      //further processing to remove the command
+      const trimmedQuery = await trimCommand(query);
+      createNoteFromBackend(trimmedQuery);
+      notes = await Note.findPaginated(1, 20);
+    } else if (intent === "request") {
+      //further processing to get content
+      const newContent = await generateContent(query);
+      createNoteFromBackend(newContent);
+      notes = await Note.findPaginated(1, 20);
+    } else {
+      notes = await Note.searchByEmbedding(query);
     }
-
-    const notes = await Note.searchByEmbedding(query);
-    const summaryMessage = await generateSearchResponse(query, notes);
+    const summaryMessage = await generateQueryResponse(query, intent, notes);
 
     res.json({
       notes,
@@ -174,6 +189,29 @@ export const semanticSearchNotes = async (
     res.status(500).json({ error: "Error performing semantic search" });
   }
 };
+
+/**
+ *
+ * @param content
+ * @returns
+ */
+export async function createNoteFromBackend(content: string) {
+  let title = await generateTitle(content);
+
+  // Fallback if title generation fails
+  if (!title || title.trim() === "") {
+    title = content.split(" ").slice(0, 7).join(" ") + "...";
+  }
+
+  try {
+    const note = new Note(title, content);
+    const savedNote = await note.save();
+    return savedNote;
+  } catch (error) {
+    console.error("Error creating note:", error);
+    throw new Error("Failed to create note");
+  }
+}
 
 /**
  * Note controller that deletes a note from the postgres database based on the id
