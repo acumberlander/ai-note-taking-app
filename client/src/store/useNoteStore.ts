@@ -6,11 +6,29 @@ import {
   _semanticSearchNotes,
   _updateNote,
 } from "@/app/api/postgresRequests";
-import { NoteStore } from "@/types/note";
+import { Note, NoteStore } from "@/types/note";
 
 export const useNoteStore = create<NoteStore>((set) => ({
   allNotes: [],
   aiResponse: "",
+  deleteModalIsOpen: false,
+  setDeleteModalState: (isOpen: boolean) => {
+    set(() => ({
+      deleteModalIsOpen: isOpen,
+    }));
+  },
+  semanticDeleteModalIsOpen: false,
+  setSemanticDeleteModalState: (isOpen: boolean) => {
+    set(() => ({
+      deleteModalIsOpen: isOpen,
+    }));
+  },
+  noteToDelete: undefined,
+  setNoteToDelete: (note: Note | undefined) => {
+    set(() => ({
+      noteToDelete: note,
+    }));
+  },
   updateAiResponse: (value: string | undefined) => {
     set(() => ({
       aiResponse: value,
@@ -31,6 +49,7 @@ export const useNoteStore = create<NoteStore>((set) => ({
     if (deleteSuccessful) {
       set((state) => ({
         allNotes: state.allNotes.filter((note) => note.id !== id),
+        deleteModalIsOpen: false,
       }));
     }
   },
