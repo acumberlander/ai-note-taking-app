@@ -12,17 +12,15 @@ export default function NoteTranscription() {
     reset,
     error,
   } = useSpeechToText();
-  const semanticSearchNotes = useNoteStore(
-    (state) => state.semanticSearchNotes
-  );
+  const semanticQuery = useNoteStore((state) => state.semanticQuery);
 
   useEffect(() => {
     if (text) {
-      semanticSearchNotes(text).then(() => {
+      semanticQuery(text).then(() => {
         reset();
       });
     }
-  }, [text, semanticSearchNotes, reset]);
+  }, [text, semanticQuery, reset]);
 
   return (
     <div className="mt-4 p-4 bg-white shadow-md rounded-lg">

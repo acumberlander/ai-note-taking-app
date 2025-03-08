@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
-import { classifyIntent, generateContent, trimCommand } from "../services/aiService";
+import {
+  classifyIntent,
+  generateContent,
+  trimCommand,
+} from "../services/aiService";
 import { sendCreateNoteRequest } from "./transcribeController";
 import { generateTitle } from "../services/aiService";
 
@@ -135,13 +139,11 @@ export const searchNotes = async (
 };
 
 /**
- * Note controller that fetches all the notes from the postgres database that match
- * the query based on the semantics.
+ * Note controller that determines what crud actions to take based on the query that's passed in.
  * @param req
  * @param res
  */
-// Semantic search (used for voice search)
-export const semanticSearchNotes = async (
+export const semanticQuery = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -159,11 +161,11 @@ export const semanticSearchNotes = async (
     if (intent === "show_all") {
       const notes = await Note.findPaginated(1, 20);
       res.json(notes);
-    } else if (intent === "create_note"){
+    } else if (intent === "create_note") {
       //further processing to remove the command
       const trimmedQuery = await trimCommand(query);
       sendCreateNoteRequest(trimmedQuery);
-    } else if (intent === "request"){
+    } else if (intent === "request") {
       //further processing to get content
       const newContent = await generateContent(query);
       sendCreateNoteRequest(newContent);
@@ -213,16 +215,16 @@ export async function createNoteFromBackend(content: string) {
 
   // Fallback if title generation fails
   if (!title || title.trim() === "") {
-      title = content.split(" ").slice(0, 7).join(" ") + "...";
+    title = content.split(" ").slice(0, 7).join(" ") + "...";
   }
 
   try {
-      const note = new Note(title, content);
-      const savedNote = await note.save();
-      console.log("Note saved:", savedNote);
-      return savedNote;
+    const note = new Note(title, content);
+    const savedNote = await note.save();
+    console.log("Note saved:", savedNote);
+    return savedNote;
   } catch (error) {
-      console.error("Error creating note:", error);
-      throw new Error("Failed to create note");
+    console.error("Error creating note:", error);
+    throw new Error("Failed to create note");
   }
 }
