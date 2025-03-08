@@ -1,28 +1,60 @@
 import { Request, Response } from "express";
-import { transcribeAudio } from "../services/transcribeService";
+import fs from "fs";
+import { OpenAI } from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const transcribeAudioFile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   if (!req.file) {
-    res.status(400).json({ error: "No file uploaded" });
+    res.status(400).json({ error: "No audio file uploaded." });
     return;
   }
 
+  if (!req.file.path || typeof req.file.path !== "string") {
+    res.status(400).json({ error: "Invalid file path." });
+    return;
+  }
+
+  const validMimeTypes = ["audio/wav", "audio/mpeg", "audio/mp4", "audio/webm"];
+  if (!validMimeTypes.includes(req.file.mimetype)) {
+    res.status(400).json({ error: "Invalid audio format" });
+    return;
+  }
+
+  const fileExtension = req.file.mimetype.split("/")[1];
+  const originalPath = req.file.path;
+  const newFilePath = `${originalPath}.${fileExtension}`;
+
+  fs.renameSync(originalPath, newFilePath);
+
   try {
-    const fileUrl = `s3://transcription-audio-4f7a2d1c-3e8f-4b5a-9c6d-0e9f8a7b6c5d/${req.file.filename}`;
-    const transcriptUrl = await transcribeAudio(fileUrl);
+    const fileStream = fs.createReadStream(newFilePath);
+    fileStream.path = newFilePath;
 
-    if (!transcriptUrl) {
-      res.status(500).json({ error: "Transcription job failed" });
-      return;
+    const transcription = await openai.audio.transcriptions.create({
+      file: fileStream,
+      model: "whisper-1",
+      language: "en",
+    });
+
+    fs.unlinkSync(newFilePath);
+
+    const transcriptionText = transcription.text?.trim().toLowerCase();
+
+    const noiseWords = ["you", "uh", "ah", "hmm", "um"];
+    if (!transcriptionText || noiseWords.includes(transcriptionText)) {
+      res.json({ text: "" });
+    } else {
+      res.json({ text: transcription.text });
     }
-
-    res.json({ transcriptUrl });
-    return;
-  } catch (err) {
-    res.status(500).json({ error: "Error transcribing audio" });
-    return;
+  } catch (error: any) {
+    console.error("Transcription Error:", error);
+    res.status(500).json({
+      error: "Transcription failed. Please try again.",
+      details: error.message || "Unknown error",
+    });
   }
 };

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Note } from "../models/noteModel";
+import { classifyIntent, generateSearchResponse } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -24,6 +25,43 @@ export const createNote = async (
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Error creating note" });
+  }
+};
+
+/**
+ * Note controller that updates a note in the database.
+ * @param req
+ * @param res
+ */
+export const updateNote = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { id } = req.params;
+  const { title, content } = req.body;
+
+  if (!id || isNaN(Number(id))) {
+    res.status(400).json({ error: "Invalid note ID" });
+    return;
+  }
+
+  if (!title || !content) {
+    res.status(400).json({ error: "Title and content are required" });
+    return;
+  }
+
+  try {
+    const updatedNote = await Note.updateNoteById(Number(id), title, content);
+
+    if (!updatedNote) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
+    res.status(200).json(updatedNote);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error updating note" });
   }
 };
 
@@ -73,22 +111,67 @@ export const getNoteById = async (
  * @param req
  * @param res
  */
+// Exact keyword search (used for typed search box)
 export const searchNotes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { query } = req.query;
+
+  if (!query || typeof query !== "string") {
+    console.log("Invalid query - returning all notes");
+    const allNotes = await Note.findPaginated(1, 10);
+    res.json(allNotes);
+    return;
+  }
+
+  const notes = await Note.searchByKeyword(query);
+  res.json(notes);
+};
+
+/**
+ * Note controller that fetches all the notes from the postgres database that match
+ * the query based on the semantics.
+ * @param req
+ * @param res
+ */
+// Semantic search (used for voice search)
+export const semanticSearchNotes = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { query } = req.body;
 
-    if (!query || typeof query !== "string") {
-      res.status(400).json({ error: "Query parameter is required" });
+    if (!query || typeof query !== "string" || query.trim() === "") {
+      const notes = await Note.findPaginated(1, 10);
+      res.json({
+        notes,
+        message: "I didn't hear anything, so I returned all your notes.",
+      });
       return;
     }
-    const notes = await Note.searchByKeyword(query);
 
-    res.json(notes);
+    const intent = await classifyIntent(query);
+    if (intent === "show_all") {
+      const notes = await Note.findPaginated(1, 10);
+      res.json({
+        notes,
+        message: "Here are all your notes.",
+      });
+      return;
+    }
+
+    const notes = await Note.searchByEmbedding(query);
+    const summaryMessage = await generateSearchResponse(query, notes);
+
+    res.json({
+      notes,
+      message: summaryMessage,
+    });
   } catch (err) {
-    res.status(500).json({ error: "Error searching notes" });
+    console.error(err);
+    res.status(500).json({ error: "Error performing semantic search" });
   }
 };
 
