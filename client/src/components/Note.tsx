@@ -7,7 +7,7 @@ interface NoteProps {
 }
 
 export default function Note({ note }: NoteProps) {
-  const { deleteNote, updateNote } = useNoteStore();
+  const { updateNote, setNoteToDelete, setDeleteModalState } = useNoteStore();
   const { id } = note;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -19,6 +19,11 @@ export default function Note({ note }: NoteProps) {
 
     await updateNote(id, { title, content });
     setIsEditing(false);
+  };
+
+  const handleDeleteNote = () => {
+    setDeleteModalState(true);
+    setNoteToDelete(note);
   };
 
   return (
@@ -57,7 +62,7 @@ export default function Note({ note }: NoteProps) {
           <p className="text-gray-600 mt-2">{note.content}</p>
           <div className="flex justify-evenly mt-2">
             <button
-              onClick={() => deleteNote(id)}
+              onClick={handleDeleteNote}
               className="bg-red-500 text-white px-4 py-1 rounded"
             >
               Delete

@@ -4,6 +4,7 @@ import { useState } from "react";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import NoteTranscription from "@/components/NoteTranscription";
+import DeleteModal from "@/components/DeleteModal";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,6 +15,7 @@ export default function Home() {
       <NoteForm setSearchQuery={setSearchQuery} />
       <NoteTranscription />
       <NoteList searchQuery={searchQuery} />
+      <DeleteModal />
     </main>
   );
 }
