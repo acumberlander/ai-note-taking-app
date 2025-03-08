@@ -3,7 +3,7 @@ import {
   _createNote,
   _deleteNoteById,
   _fetchAllNotes,
-  _semanticSearchNotes,
+  _semanticQuery,
   _updateNote,
 } from "@/app/api/postgresRequests";
 import { Note, NoteStore } from "@/types/note";
@@ -61,8 +61,8 @@ export const useNoteStore = create<NoteStore>((set) => ({
       ),
     }));
   },
-  semanticSearchNotes: async (query) => {
-    const result = await _semanticSearchNotes(query);
+  semanticQuery: async (query) => {
+    const result = await _semanticQuery(query);
     set({
       allNotes: result.notes,
       aiResponse: result.message,

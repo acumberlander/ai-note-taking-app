@@ -13,9 +13,7 @@ export default function NoteTranscription() {
     error,
   } = useSpeechToText();
 
-  const semanticSearchNotes = useNoteStore(
-    (state) => state.semanticSearchNotes
-  );
+  const semanticQuery = useNoteStore((state) => state.semanticQuery);
   const { aiResponse, updateAiResponse } = useNoteStore((state) => state);
 
   const handleStartRecording = () => {
@@ -31,9 +29,9 @@ export default function NoteTranscription() {
 
   useEffect(() => {
     if (text && !isRecording && !isTranscribing) {
-      semanticSearchNotes(text);
+      semanticQuery(text);
     }
-  }, [text, isRecording, isTranscribing, semanticSearchNotes]);
+  }, [text, isRecording, isTranscribing, semanticQuery]);
 
   return (
     <div className="mt-4 p-4 bg-white shadow-md rounded-lg">

@@ -1,8 +1,11 @@
 "use client";
 
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useState, useEffect } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import RefreshButton from "./RefreshButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faMicrophone } from "@fortawesome/free-solid-svg-icons";
+import { useSpeechToText } from "@/app/api/useSpeechToText";
 
 type NoteFormProps = {
   setSearchQuery: (query: string) => void;
@@ -43,6 +46,17 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
     updateAiResponse("");
     await fetchNotes();
   };
+
+  // Use the speech-to-text hook
+  const { text, isRecording, startRecording, stopRecording, error } =
+    useSpeechToText();
+
+  // Automatically update content when transcription completes
+  useEffect(() => {
+    if (!isRecording && text) {
+      setContent(text);
+    }
+  }, [text, isRecording]);
 
   return (
     <div>
@@ -98,12 +112,26 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
           </>
         )}
         {!isFilter ? (
-          <button
-            type="submit"
-            className="w-full bg-blue-500 text-white p-2 rounded"
-          >
-            Add Note
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white p-2 rounded"
+            >
+              Add Note
+            </button>
+            <button
+              type="button"
+              onClick={isRecording ? stopRecording : startRecording}
+              className={`p-3 rounded-full ${
+                isRecording ? "bg-red-500" : "bg-gray-300"
+              } text-white`}
+            >
+              <FontAwesomeIcon
+                icon={faMicrophone}
+                className="text-black w-6 h-6"
+              />
+            </button>
+          </div>
         ) : null}
       </form>
     </div>
