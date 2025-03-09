@@ -13,7 +13,7 @@ export default function NoteList({ searchQuery }: NoteListProps) {
   const [filteredNotes, setFilteredNotes] = useState(allNotes);
 
   useEffect(() => {
-    fetchNotes(); // Initial load
+    fetchNotes();
   }, [fetchNotes]);
 
   useEffect(() => {
