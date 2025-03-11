@@ -31,7 +31,9 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
  */
 export const classifyIntent = async (
   query: string
-): Promise<"show_all" | "search" | "create_note" | "request"> => {
+): Promise<
+  "show_all" | "search" | "create_note" | "delete_notes" | "request"
+> => {
   const systemPrompt = `
   You are an intent classification assistant for a note-taking app.
   You will receive a user query. Your job is to classify the query into one of these two categories:
@@ -42,6 +44,8 @@ export const classifyIntent = async (
   3. "create_note" - if the user wants to create a new note with some content they define/dictate (examples: "write this down", "create a note that says" )
   4. "request" - if the user wants you to be inventive and write an answer. ("can you write a grocery list for me with healthy items?", "Please create a good schedule for workouts I can do on leg day")
   Only return "show_all" or "search" or "create_note" or "request" as the response. No explanation, no other text.
+  5. "delete_notes" - if the user wants you to delete notes based on the content they define/dictate ( examples: "delete notes related to health", "get rid of notes that talk about food", "remove notes that mention technology")
+    an important not for the delete_notes intent is that you only need to identify the intent. The result should be the same as the search in terms of what is returned.
   `;
 
   const completion = await openai.chat.completions.create({
@@ -57,6 +61,10 @@ export const classifyIntent = async (
 
   if (classification === "show_all") return "show_all";
   if (classification === "create_note") return "create_note";
+  if (classification === "delete_notes") {
+    console.log("delete intent");
+    return "delete_notes";
+  }
   if (classification === "request") return "request";
   return "search";
 };
@@ -154,7 +162,8 @@ export async function generateContent(query: string): Promise<string> {
 export const trimCommand = async (query: string): Promise<string> => {
   const systemPrompt = `
   Extract only the content of the note from the user's speech. Remove any command-like phrases.
-  Be very exact with the remaining content, copying it word for word.
+  Be very exact with the remaining content, copying it word for word. Typical command words or phrases would include the following:
+  "delete", "show", "delete my notes", "remove", "display".
   `;
 
   const extractionResponse = await openai.chat.completions.create({
