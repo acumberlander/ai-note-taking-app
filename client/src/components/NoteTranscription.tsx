@@ -1,37 +1,14 @@
-import { useSpeechToText } from "@/app/api/useSpeechToText";
-import { useNoteStore } from "@/store/useNoteStore";
-import { useEffect } from "react";
+import useNoteTranscription from "@/hooks/useNoteTranscription";
 
 export default function NoteTranscription() {
   const {
-    text,
+    error,
+    aiResponse,
     isRecording,
     isTranscribing,
-    startRecording,
-    stopRecording,
-    reset,
-    error,
-  } = useSpeechToText();
-
-  const semanticQuery = useNoteStore((state) => state.semanticQuery);
-  const { aiResponse, updateAiResponse } = useNoteStore((state) => state);
-
-  const handleStartRecording = () => {
-    reset();
-    updateAiResponse("");
-    startRecording();
-  };
-
-  const handleStopRecording = () => {
-    updateAiResponse("Searching...");
-    stopRecording();
-  };
-
-  useEffect(() => {
-    if (text && !isRecording && !isTranscribing) {
-      semanticQuery(text);
-    }
-  }, [text, isRecording, isTranscribing, semanticQuery]);
+    handleStartRecording,
+    handleStopRecording,
+  } = useNoteTranscription();
 
   return (
     <div className="mt-4 p-4 bg-white shadow-md rounded-lg">

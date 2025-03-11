@@ -1,62 +1,33 @@
 "use client";
 
-import { ChangeEvent, useState, useEffect } from "react";
-import { useNoteStore } from "@/store/useNoteStore";
 import RefreshButton from "./RefreshButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMicrophone } from "@fortawesome/free-solid-svg-icons";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
+import { useForm } from "@/hooks/useForm";
 
 type NoteFormProps = {
-  setSearchQuery: (query: string) => void;
+  setQuery: (query: string) => void;
 };
 
-export default function NoteForm({ setSearchQuery }: NoteFormProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [filter, setFilter] = useState("");
-  const [isFilter, setIsFilter] = useState(false);
+export default function NoteForm({ setQuery }: NoteFormProps) {
+  const {
+    title,
+    filter,
+    content,
+    isFilter,
+    isRecording,
+    setTitle,
+    setContent,
+    setIsFilter,
+    handleSubmit,
+    refreshNotes,
+    handleSearchChange,
+    handleMicrophoneClick,
+  } = useForm({ setQuery });
 
-  const { addNote, fetchNotes, updateAiResponse } = useNoteStore(
-    (state) => state
-  );
-
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFilter(e.target.value);
-    setSearchQuery(e.target.value);
-  };
-
-  const clearInputs = () => {
-    setTitle("");
-    setContent("");
-    setFilter("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !content) return;
-    await addNote({ title, content });
-    clearInputs();
-    refreshNotes();
-  };
-
-  const refreshNotes = async () => {
-    setSearchQuery("");
-    clearInputs();
-    updateAiResponse("");
-    await fetchNotes();
-  };
-
-  // Use the speech-to-text hook
-  const { text, isRecording, startRecording, stopRecording, error } =
-    useSpeechToText();
-
-  // Automatically update content when transcription completes
-  useEffect(() => {
-    if (!isRecording && text) {
-      setContent(text);
-    }
-  }, [text, isRecording]);
+  //const { text, startRecording, stopRecording, isRecording } = useSpeechToText();
+  const { startRecording, stopRecording } = useSpeechToText();
 
   return (
     <div>
@@ -121,7 +92,7 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
             </button>
             <button
               type="button"
-              onClick={isRecording ? stopRecording : startRecording}
+              onClick={handleMicrophoneClick}
               className={`p-3 rounded-full ${
                 isRecording ? "bg-red-500" : "bg-gray-300"
               } text-white`}

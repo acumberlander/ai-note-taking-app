@@ -12,6 +12,7 @@ import {
   semanticQuery,
   deleteNoteById,
   updateNote,
+  deleteNotes,
 } from "../controllers/noteController";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get("/search", searchNotes);
 router.post("/semantic-query", semanticQuery);
 router.get("/:id", getNoteById);
 router.delete("/:id", deleteNoteById);
+router.delete("/", deleteNotes);
 router.put("/:id", updateNote);
 
 const wss = new WebSocketServer({ port: Number(process.env.WS_PORT) });

@@ -90,7 +90,7 @@ export class Note {
       ORDER BY similarity ASC
       LIMIT 10
       `,
-      [formattedEmbedding, 0.239]
+      [formattedEmbedding, 0.24015]
     );
 
     return result.rows.map(
@@ -173,5 +173,18 @@ export class Note {
   static async deleteNoteById(id: number): Promise<boolean> {
     const result = await pool.query("DELETE FROM notes WHERE id = $1", [id]);
     return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * Delete multiple notes by their IDs.
+   */
+  static async deleteNotesByIds(ids: number[]): Promise<number | null> {
+    if (ids.length === 0) return 0;
+
+    const result = await pool.query("DELETE FROM notes WHERE id = ANY($1)", [
+      ids,
+    ]);
+
+    return result.rowCount;
   }
 }

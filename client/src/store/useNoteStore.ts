@@ -1,7 +1,10 @@
+// useNoteStore.ts
 import { create } from "zustand";
+import { devtools } from "zustand/middleware";
 import {
   _createNote,
   _deleteNoteById,
+  _deleteNotes,
   _fetchAllNotes,
   _semanticQuery,
   _updateNote,
@@ -10,17 +13,24 @@ import { Note, NoteStore } from "@/types/note";
 
 const socket = new WebSocket("ws://localhost:8080");
 
-export const useNoteStore = create<NoteStore>((set) => {
-  socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (message.type === "update") {
-      set({ allNotes: message.notes });
-    }
+export const useNoteStore = create<NoteStore>()(
+  devtools((set) => {
+    socket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      if (message.type === "update") {
+        set({ allNotes: message.notes });
+      }
   };
-
-  return {
+  
+    return {
   allNotes: [],
   aiResponse: "",
+  queryIntent: "",
+    setQueryIntent: (intent: string) => {
+      set(() => ({
+        queryIntent: intent,
+      }));
+    },
   deleteModalIsOpen: false,
   setDeleteModalState: (isOpen: boolean) => {
     set(() => ({
@@ -30,7 +40,7 @@ export const useNoteStore = create<NoteStore>((set) => {
   semanticDeleteModalIsOpen: false,
   setSemanticDeleteModalState: (isOpen: boolean) => {
     set(() => ({
-      deleteModalIsOpen: isOpen,
+      semanticDeleteModalIsOpen: isOpen,
     }));
   },
   noteToDelete: undefined,
@@ -39,6 +49,12 @@ export const useNoteStore = create<NoteStore>((set) => {
       noteToDelete: note,
     }));
   },
+  notesToDelete: [],
+    setNotesToDelete: (notes: Note[] | undefined) => {
+      set(() => ({
+        notesToDelete: notes,
+      }));
+    },
   updateAiResponse: (value: string | undefined) => {
     set(() => ({
       aiResponse: value,
@@ -63,6 +79,17 @@ export const useNoteStore = create<NoteStore>((set) => {
       }));
     }
   },
+  deleteNotes: async (notes: Note[]) => {
+    const deleteSuccessful = await _deleteNotes(notes);
+    if (deleteSuccessful) {
+      set((state) => ({
+        allNotes: state.allNotes.filter(
+          (note) => !notes.some((_note) => note.id === _note.id)
+        ),
+        semanticDeleteModalIsOpen: false,
+      }));
+    }
+  },
   updateNote: async (id, { title, content }) => {
     const updatedNote = await _updateNote(id, { title, content });
     set((state) => ({
@@ -73,10 +100,21 @@ export const useNoteStore = create<NoteStore>((set) => {
   },
   semanticQuery: async (query) => {
     const result = await _semanticQuery(query);
-    set({
-      allNotes: result.notes,
-      aiResponse: result.message,
-    });
+    if (result.intent === "delete_notes" && result.notes.length > 0) {
+      set({
+        allNotes: result.notes,
+        aiResponse: result.message,
+        queryIntent: result.intent,
+        notesToDelete: result.notes,
+        semanticDeleteModalIsOpen: true,
+      });
+    } else {
+      set({
+        allNotes: result.notes,
+        aiResponse: result.message,
+        queryIntent: result.intent,
+      });
+    }
   },
 };
-});
+}));
