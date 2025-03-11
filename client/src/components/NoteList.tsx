@@ -5,22 +5,22 @@ import { useNoteStore } from "@/store/useNoteStore";
 import Note from "@/components/Note";
 
 type NoteListProps = {
-  searchQuery: string;
+  query: string;
 };
 
-export default function NoteList({ searchQuery }: NoteListProps) {
+export default function NoteList({ query }: NoteListProps) {
   const { allNotes, fetchNotes } = useNoteStore();
   const [filteredNotes, setFilteredNotes] = useState(allNotes);
 
   useEffect(() => {
-    fetchNotes(); // Initial load
+    fetchNotes();
   }, [fetchNotes]);
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
+    if (query.trim() === "") {
       setFilteredNotes(allNotes);
     } else {
-      const lowerQuery = searchQuery.toLowerCase();
+      const lowerQuery = query.toLowerCase();
       const filtered = allNotes.filter(
         (note) =>
           note.title.toLowerCase().includes(lowerQuery) ||
@@ -28,7 +28,7 @@ export default function NoteList({ searchQuery }: NoteListProps) {
       );
       setFilteredNotes(filtered);
     }
-  }, [searchQuery, allNotes]);
+  }, [query, allNotes]);
 
   return (
     <div>
@@ -41,7 +41,7 @@ export default function NoteList({ searchQuery }: NoteListProps) {
       ) : (
         <div className="font-bold mt-4">
           There are not notes that match these keywords:{" "}
-          <p className="font-bold text-red-600">{searchQuery}</p>
+          <p className="font-bold text-red-600">{query}</p>
         </div>
       )}
     </div>

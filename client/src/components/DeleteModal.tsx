@@ -11,7 +11,7 @@ import {
 } from "@material-tailwind/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Note } from "@/types/note";
-import { useModal } from "@/hooks/hooks";
+import { useModal } from "@/hooks/useModal";
 import { useNoteStore } from "@/store/useNoteStore";
 
 export default function DeleteModal() {

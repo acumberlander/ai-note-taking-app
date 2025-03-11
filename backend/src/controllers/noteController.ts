@@ -140,7 +140,6 @@ export const searchNotes = async (
  * @param req
  * @param res
  */
-// Semantic search (used for voice search)
 export const semanticQuery = async (
   req: Request,
   res: Response
@@ -166,22 +165,24 @@ export const semanticQuery = async (
         message: "Here are all your notes.",
       });
     } else if (intent === "create_note") {
-      //further processing to remove the command
       const trimmedQuery = await trimCommand(query);
       createNoteFromBackend(trimmedQuery);
       notes = await Note.findPaginated(1, 20);
     } else if (intent === "request") {
-      //further processing to get content
       const newContent = await generateContent(query);
       createNoteFromBackend(newContent);
       notes = await Note.findPaginated(1, 20);
-    } else {
-      notes = await Note.searchByEmbedding(query);
+    } else if (intent === "delete_notes" || intent === "search") {
+      // For deletion, strip out command words to focus on relevant keywords
+      const searchQuery =
+        intent === "delete_notes" ? await trimCommand(query) : query;
+      notes = await Note.searchByEmbedding(searchQuery);
     }
     const summaryMessage = await generateQueryResponse(query, intent, notes);
 
     res.json({
       notes,
+      intent,
       message: summaryMessage,
     });
   } catch (err) {
@@ -241,5 +242,39 @@ export const deleteNoteById = async (
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error deleting note" });
+  }
+};
+
+/**
+ * Note controller that deletes an array of note IDs passed as a query parameter.
+ * @param req
+ * @param res
+ */
+export const deleteNotes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { noteIds } = req.body;
+
+  if (!Array.isArray(noteIds) || noteIds.length === 0) {
+    res
+      .status(400)
+      .json({ error: "Invalid note IDs: must be a non-empty array" });
+    return;
+  }
+
+  try {
+    const deletedCount = await Note.deleteNotesByIds(noteIds);
+
+    if (deletedCount && deletedCount > 0) {
+      res
+        .status(200)
+        .json({ message: `${deletedCount} note(s) deleted successfully` });
+    } else {
+      res.status(404).json({ error: "No notes found for deletion" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error deleting notes" });
   }
 };

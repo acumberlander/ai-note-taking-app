@@ -46,7 +46,7 @@ export const _searchNotes = async (query: string): Promise<Note[]> => {
  */
 export const _semanticQuery = async (
   query: string
-): Promise<{ notes: Note[]; message: string }> => {
+): Promise<{ notes: Note[]; message: string; intent: string }> => {
   const res = await axios.post(`${baseUrl}/api/notes/semantic-query`, {
     query,
   });
@@ -72,5 +72,17 @@ export const _updateNote = async (
  */
 export const _deleteNoteById = async (id: number): Promise<boolean> => {
   const res = await axios.delete(`${baseUrl}/api/notes/${id}`);
+  return res.status === 200;
+};
+
+/**
+ * Delete multiple notes.
+ * @param notes - Array of Note objects.
+ */
+export const _deleteNotes = async (notes: Note[]): Promise<boolean> => {
+  const noteIds = notes.map((note) => note.id);
+  const res = await axios.delete(`${baseUrl}/api/notes`, {
+    data: { noteIds },
+  });
   return res.status === 200;
 };
