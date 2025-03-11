@@ -8,7 +8,17 @@ import {
 } from "@/app/api/postgresRequests";
 import { Note, NoteStore } from "@/types/note";
 
-export const useNoteStore = create<NoteStore>((set) => ({
+const socket = new WebSocket("ws://localhost:8080");
+
+export const useNoteStore = create<NoteStore>((set) => {
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.type === "update") {
+      set({ allNotes: message.notes });
+    }
+  };
+
+  return {
   allNotes: [],
   aiResponse: "",
   deleteModalIsOpen: false,
@@ -68,4 +78,5 @@ export const useNoteStore = create<NoteStore>((set) => ({
       aiResponse: result.message,
     });
   },
-}));
+};
+});

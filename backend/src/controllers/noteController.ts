@@ -7,6 +7,7 @@ import {
   generateQueryResponse,
 } from "../services/aiService";
 import { generateTitle } from "../services/aiService";
+import { broadcastUpdate } from "../routes/noteRoutes";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -206,6 +207,7 @@ export async function createNoteFromBackend(content: string) {
   try {
     const note = new Note(title, content);
     const savedNote = await note.save();
+    await broadcastUpdate(); // Notify frontend
     return savedNote;
   } catch (error) {
     console.error("Error creating note:", error);
