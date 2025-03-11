@@ -7,10 +7,10 @@ import { useSpeechToText } from "@/app/api/useSpeechToText";
 import { useForm } from "@/hooks/useForm";
 
 type NoteFormProps = {
-  setSearchQuery: (query: string) => void;
+  setQuery: (query: string) => void;
 };
 
-export default function NoteForm({ setSearchQuery }: NoteFormProps) {
+export default function NoteForm({ setQuery }: NoteFormProps) {
   const {
     title,
     filter,
@@ -23,7 +23,7 @@ export default function NoteForm({ setSearchQuery }: NoteFormProps) {
     handleSubmit,
     refreshNotes,
     handleSearchChange,
-  } = useForm({ setSearchQuery });
+  } = useForm({ setQuery });
 
   const { startRecording, stopRecording } = useSpeechToText();
 

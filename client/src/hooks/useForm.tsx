@@ -3,10 +3,10 @@ import { useNoteStore } from "@/store/useNoteStore";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
 
 interface UseFormProps {
-  setSearchQuery: (query: string) => void;
+  setQuery: (query: string) => void;
 }
 
-export const useForm = ({ setSearchQuery }: UseFormProps) => {
+export const useForm = ({ setQuery }: UseFormProps) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [filter, setFilter] = useState("");
@@ -18,7 +18,7 @@ export const useForm = ({ setSearchQuery }: UseFormProps) => {
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFilter(e.target.value);
-    setSearchQuery(e.target.value);
+    setQuery(e.target.value);
   };
 
   const clearInputs = () => {
@@ -36,7 +36,7 @@ export const useForm = ({ setSearchQuery }: UseFormProps) => {
   };
 
   const refreshNotes = async () => {
-    setSearchQuery("");
+    setQuery("");
     clearInputs();
     updateAiResponse("");
     await fetchNotes();
