@@ -1,4 +1,3 @@
-// useNoteStore.ts
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import {
@@ -16,6 +15,12 @@ export const useNoteStore = create<NoteStore>()(
     allNotes: [],
     aiResponse: "",
     queryIntent: "",
+    isLoading: true,
+    setIsLoading: (loadingState: boolean) => {
+      set(() => ({
+        isLoading: loadingState,
+      }));
+    },
     setQueryIntent: (intent: string) => {
       set(() => ({
         queryIntent: intent,
@@ -52,7 +57,7 @@ export const useNoteStore = create<NoteStore>()(
     },
     fetchNotes: async () => {
       const data = await _fetchAllNotes();
-      set({ allNotes: data });
+      set({ allNotes: data, isLoading: false });
     },
     addNote: async ({ title, content }) => {
       const note = await _createNote({ title, content });

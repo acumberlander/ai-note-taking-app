@@ -1,40 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useNoteStore } from "@/store/useNoteStore";
+import React from "react";
 import Note from "@/components/Note";
+import { Note as NoteType } from "@/types/note";
 
 type NoteListProps = {
   query: string;
+  notes: NoteType[];
 };
 
-export default function NoteList({ query }: NoteListProps) {
-  const { allNotes, fetchNotes } = useNoteStore();
-  const [filteredNotes, setFilteredNotes] = useState(allNotes);
-
-  useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
-
-  useEffect(() => {
-    if (query.trim() === "") {
-      setFilteredNotes(allNotes);
-    } else {
-      const lowerQuery = query.toLowerCase();
-      const filtered = allNotes.filter(
-        (note) =>
-          note.title.toLowerCase().includes(lowerQuery) ||
-          note.content.toLowerCase().includes(lowerQuery)
-      );
-      setFilteredNotes(filtered);
-    }
-  }, [query, allNotes]);
-
+export default function NoteList({ query, notes }: NoteListProps) {
   return (
     <div>
-      {filteredNotes.length ? (
+      {notes.length ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {filteredNotes.map((note) => (
+          {notes.map((note) => (
             <Note key={note.id} note={note} />
           ))}
         </div>
