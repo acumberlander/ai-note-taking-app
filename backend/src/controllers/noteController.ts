@@ -5,15 +5,16 @@ import {
   generateContent,
   trimCommand,
   generateQueryResponse,
+  semanticEditNotes,
+  generateTitle,
 } from "../services/aiService";
-import { generateTitle } from "../services/aiService";
 
 /**
  * Note controller that saves a note to the postgres database
  * @param req
  * @param res
  */
-export const createNote = async (
+export const createNoteController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -39,7 +40,7 @@ export const createNote = async (
  * @param req
  * @param res
  */
-export const updateNote = async (
+export const updateNoteController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -76,7 +77,10 @@ export const updateNote = async (
  * @param req
  * @param res
  */
-export const getNotes = async (req: Request, res: Response): Promise<void> => {
+export const getNotesController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
@@ -98,7 +102,7 @@ export const getNotes = async (req: Request, res: Response): Promise<void> => {
  * @param req
  * @param res
  */
-export const getNoteById = async (
+export const getNoteByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -118,7 +122,7 @@ export const getNoteById = async (
  * @param res
  */
 // Exact keyword search (used for typed search box)
-export const searchNotes = async (
+export const searchNotesController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -140,13 +144,14 @@ export const searchNotes = async (
  * @param req
  * @param res
  */
-export const semanticQuery = async (
+export const semanticQueryController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { query } = req.body;
     let notes: Note[] = [];
+    let editedNotes: Note[] = [];
 
     if (!query || typeof query !== "string" || query.trim() === "") {
       notes = await Note.findPaginated(1, 20);
@@ -172,16 +177,26 @@ export const semanticQuery = async (
       const newContent = await generateContent(query);
       createNoteFromBackend(newContent);
       notes = await Note.findPaginated(1, 20);
-    } else if (intent === "delete_notes" || intent === "search") {
-      // For deletion, strip out command words to focus on relevant keywords
+    } else if (
+      intent === "delete_notes" ||
+      intent === "search" ||
+      intent === "edit_notes"
+    ) {
+      // For deletion or editing, strip out command words to focus on relevant keywords
       const searchQuery =
-        intent === "delete_notes" ? await trimCommand(query) : query;
+        intent === "delete_notes" || intent === "edit_notes"
+          ? await trimCommand(query)
+          : query;
       notes = await Note.searchByEmbedding(searchQuery);
+      if (intent === "edit_notes") {
+        editedNotes = await semanticEditNotes(query, notes);
+      }
     }
     const summaryMessage = await generateQueryResponse(query, intent, notes);
 
     res.json({
       notes,
+      editedNotes,
       intent,
       message: summaryMessage,
     });
@@ -220,7 +235,7 @@ export async function createNoteFromBackend(content: string) {
  * @param req
  * @param res
  */
-export const deleteNoteById = async (
+export const deleteNoteByIdController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -250,7 +265,7 @@ export const deleteNoteById = async (
  * @param req
  * @param res
  */
-export const deleteNotes = async (
+export const deleteNotesController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -276,5 +291,54 @@ export const deleteNotes = async (
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error deleting notes" });
+  }
+};
+
+/**
+ * Updates multiple notes in a single request.
+ * @param req Request containing array of notes to update
+ * @param res Response with updated notes
+ */
+export const updateNotesController = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { notes } = req.body;
+
+  if (!Array.isArray(notes) || notes.length === 0) {
+    res.status(400).json({ error: "Notes array must not be empty" });
+    return;
+  }
+
+  try {
+    const updatedNotes = [];
+
+    for (const note of notes) {
+      if (!note.id || !note.title || !note.content) {
+        continue;
+      }
+
+      const updatedNote = await Note.updateNoteById(
+        note.id,
+        note.title,
+        note.content
+      );
+
+      if (updatedNote) {
+        updatedNotes.push(updatedNote);
+      }
+    }
+
+    if (updatedNotes.length > 0) {
+      res.status(200).json({
+        notes: updatedNotes,
+        message: `${updatedNotes.length} note(s) updated successfully`,
+      });
+    } else {
+      res.status(404).json({ error: "No notes were updated" });
+    }
+  } catch (err) {
+    console.error("Error updating multiple notes:", err);
+    res.status(500).json({ error: "Error updating notes" });
   }
 };

@@ -22,11 +22,15 @@ export default function DeleteModal() {
     setDeleteModalState,
   } = useNoteStore();
 
+  const handleCloseModal = () => {
+    setDeleteModalState(false);
+  };
+
   return (
     <Dialog
       size="sm"
       open={deleteModalIsOpen}
-      handler={() => setDeleteModalState(false)}
+      handler={handleCloseModal}
       className="fixed inset-0 flex items-center justify-center p-4 text-center bg-black/50"
     >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
@@ -34,22 +38,27 @@ export default function DeleteModal() {
           <Typography variant="h4" color="blue-gray">
             Are you sure you want to delete this note?
           </Typography>
-          <IconButton
-            size="sm"
-            variant="text"
-            className="!absolute right-3.5 top-3.5"
-            onClick={() => setDeleteModalState(false)}
-          >
-            <XMarkIcon className="h-4 w-4 stroke-2 hover:bg-red-500 rounded" />
-          </IconButton>
         </DialogHeader>
         <DialogBody className="space-y-4 px-2">
-          <Typography>{note?.title}</Typography>
+          <Typography className="font-bold">{note?.title}</Typography>
+          {note?.content.length > 240 ? (
+            <div className="overflow-y-hidden hover:overflow-y-auto hover:border-2 hover:border-blue-100">
+              <Typography className="text-gray-600 mt-2 max-h-28 p-2">
+                {note?.content}
+              </Typography>
+            </div>
+          ) : (
+            <div className="overflow-y-hidden hover:overflow-y-auto p-2">
+              <Typography className="text-gray-600 mt-2 max-h-28">
+                {note?.content}
+              </Typography>
+            </div>
+          )}
         </DialogBody>
         <DialogFooter className="flex justify-evenly">
           <Button
             className="bg-gray-500 px-4 py-1 rounded"
-            onClick={() => setDeleteModalState(false)}
+            onClick={handleCloseModal}
           >
             Cancel
           </Button>

@@ -46,7 +46,12 @@ export const _searchNotes = async (query: string): Promise<Note[]> => {
  */
 export const _semanticQuery = async (
   query: string
-): Promise<{ notes: Note[]; message: string; intent: string }> => {
+): Promise<{
+  notes: Note[];
+  editedNotes: Note[];
+  message: string;
+  intent: string;
+}> => {
   const res = await axios.post(`${baseUrl}/api/notes/semantic-query`, {
     query,
   });
@@ -63,6 +68,18 @@ export const _updateNote = async (
   updatedNote: NewNote
 ): Promise<Note> => {
   const res = await axios.put(`${baseUrl}/api/notes/${id}`, updatedNote);
+  return res.data;
+};
+
+/**
+ * Update multiple notes.
+ * @param notes
+ */
+export const _updateNotes = async (
+  notes: Note[]
+): Promise<{ notes: Note[]; message: string }> => {
+  const res = await axios.put(`${baseUrl}/api/notes`, { notes });
+  console.log("_updateNotes: ", res.data);
   return res.data;
 };
 

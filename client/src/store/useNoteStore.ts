@@ -7,15 +7,34 @@ import {
   _fetchAllNotes,
   _semanticQuery,
   _updateNote,
+  _updateNotes,
 } from "@/app/api/postgresRequests";
 import { Note, NoteStore } from "@/types/note";
 
 export const useNoteStore = create<NoteStore>()(
   devtools((set) => ({
+    // State Values
     allNotes: [],
     aiResponse: "",
     queryIntent: "",
     isLoading: true,
+    editedNotes: [],
+    deleteModalIsOpen: false,
+    semanticDeleteModalIsOpen: false,
+    semanticEditModalIsOpen: false,
+    noteToDelete: undefined,
+
+    // State functions
+    setQueriedNotes: (notes: Note[] | undefined) => {
+      set(() => ({
+        queriedNotes: notes,
+      }));
+    },
+    setEditedNotes: (updatedNotes: Note[]) => {
+      set(() => ({
+        editedNotes: updatedNotes,
+      }));
+    },
     setIsLoading: (loadingState: boolean) => {
       set(() => ({
         isLoading: loadingState,
@@ -26,28 +45,24 @@ export const useNoteStore = create<NoteStore>()(
         queryIntent: intent,
       }));
     },
-    deleteModalIsOpen: false,
     setDeleteModalState: (isOpen: boolean) => {
       set(() => ({
         deleteModalIsOpen: isOpen,
       }));
     },
-    semanticDeleteModalIsOpen: false,
     setSemanticDeleteModalState: (isOpen: boolean) => {
       set(() => ({
-        semanticDeleteModalIsOpen: isOpen, // corrected property
+        semanticDeleteModalIsOpen: isOpen,
       }));
     },
-    noteToDelete: undefined,
+    setSemanticEditModalState: (isOpen: boolean) => {
+      set(() => ({
+        semanticEditModalIsOpen: isOpen,
+      }));
+    },
     setNoteToDelete: (note: Note | undefined) => {
       set(() => ({
         noteToDelete: note,
-      }));
-    },
-    notesToDelete: [],
-    setNotesToDelete: (notes: Note[] | undefined) => {
-      set(() => ({
-        notesToDelete: notes,
       }));
     },
     updateAiResponse: (value: string | undefined) => {
@@ -56,8 +71,10 @@ export const useNoteStore = create<NoteStore>()(
       }));
     },
     fetchNotes: async () => {
+      set({ isLoading: true });
       const data = await _fetchAllNotes();
-      set({ allNotes: data, isLoading: false });
+
+      set({ allNotes: [...data], isLoading: false });
     },
     addNote: async ({ title, content }) => {
       const note = await _createNote({ title, content });
@@ -85,6 +102,26 @@ export const useNoteStore = create<NoteStore>()(
         }));
       }
     },
+    updateNotes: async (oldNotes: Note[]) => {
+      const { notes: updatedNotes, message } = await _updateNotes(oldNotes);
+      if (updatedNotes.length > 0) {
+        set((state) => ({
+          allNotes: state.allNotes.map((note) => {
+            const updatedNote = updatedNotes.find(
+              (updated) => updated.id === note.id
+            );
+            return updatedNote || note;
+          }),
+          queriedNotes: updatedNotes,
+        }));
+
+        // Ensure that UI updates by explicitly triggering a state change
+        set((state) => ({ allNotes: [...state.allNotes] }));
+
+        return true;
+      }
+      return false;
+    },
     updateNote: async (id, { title, content }) => {
       const updatedNote = await _updateNote(id, { title, content });
       set((state) => ({
@@ -100,8 +137,17 @@ export const useNoteStore = create<NoteStore>()(
           allNotes: result.notes,
           aiResponse: result.message,
           queryIntent: result.intent,
-          notesToDelete: result.notes,
+          queriedNotes: result.notes,
           semanticDeleteModalIsOpen: true,
+        });
+      } else if (result.intent === "edit_notes") {
+        set({
+          allNotes: result.notes,
+          aiResponse: result.message,
+          queryIntent: result.intent,
+          queriedNotes: result.notes,
+          editedNotes: result.editedNotes,
+          semanticEditModalIsOpen: true,
         });
       } else {
         set({
