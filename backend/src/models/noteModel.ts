@@ -168,6 +168,41 @@ export class Note {
   }
 
   /**
+   * Update notes with new values and regenerate embedding.
+   */
+  static async updateNotes(notes: Note[]): Promise<Note[] | null> {
+    const updatedNotes: Note[] = [];
+    
+    for (const note of notes) {
+      const noteText = `${note.title} ${note.content}`;
+      const embedding = await generateEmbedding(noteText);
+      const formattedEmbedding = JSON.stringify(embedding);
+
+      const result = await pool.query(
+        `
+        UPDATE notes 
+        SET title = $1, content = $2, embedding = $3::vector
+        WHERE id = $4
+        RETURNING *
+        `,
+        [note.title, note.content, formattedEmbedding, note.id]
+      );
+
+      if (result.rows.length === 0) return null;
+      
+      updatedNotes.push(new Note(
+        result.rows[0].title,
+        result.rows[0].content,
+        result.rows[0].id,
+        result.rows[0].embedding,
+        result.rows[0].similarity
+      ));
+    }
+    
+    return updatedNotes;
+  }
+
+  /**
    * Delete note by ID.
    */
   static async deleteNoteById(id: number): Promise<boolean> {

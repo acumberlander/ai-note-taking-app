@@ -32,7 +32,7 @@ export const useForm = ({ setQuery }: UseFormProps) => {
     if (!title || !content) return;
     await addNote({ title, content });
     clearInputs();
-    refreshNotes();
+    await refreshNotes();
   };
 
   const refreshNotes = async () => {

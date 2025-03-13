@@ -16,27 +16,27 @@ import { Note } from "@/types/note";
 
 export default function SemanticDeleteModal() {
   const {
-    notesToDelete,
+    queriedNotes,
     semanticDeleteModalIsOpen,
     deleteNotes,
-    setNotesToDelete,
+    setQueriedNotes,
     setSemanticDeleteModalState,
   } = useNoteStore();
 
   // Local state to track selected notes
   const [selectedNotes, setSelectedNotes] = useState([]);
 
-  // When notesToDelete changes (or when modal opens), initialize selected notes
+  // When queriedNotes changes (or when modal opens), initialize selected notes
   useEffect(() => {
-    if (notesToDelete && notesToDelete.length > 0) {
+    if (queriedNotes && queriedNotes.length > 0) {
       // Create a new array with contentHidden set to true for all notes
-      const notesWithHiddenContent = notesToDelete.map((note) => ({
+      const notesWithHiddenContent = queriedNotes.map((note) => ({
         ...note,
         contentHidden: true,
       }));
 
       // Update the store with the new array
-      setNotesToDelete(notesWithHiddenContent);
+      setQueriedNotes(notesWithHiddenContent);
       setSelectedNotes(notesWithHiddenContent);
     }
   }, [semanticDeleteModalIsOpen]);
@@ -59,10 +59,10 @@ export default function SemanticDeleteModal() {
   };
 
   const handleHideContent = (noteId: number) => {
-    if (!notesToDelete || notesToDelete.length === 0) return;
+    if (!queriedNotes || queriedNotes.length === 0) return;
 
     // Create a new array with the updated note
-    const updatedNotes = notesToDelete.map((note) => {
+    const updatedNotes = queriedNotes.map((note) => {
       if (note.id === noteId) {
         // Create a new note object with the contentHidden property toggled
         return {
@@ -75,7 +75,7 @@ export default function SemanticDeleteModal() {
     });
 
     // Update both the store and the local state
-    setNotesToDelete(updatedNotes);
+    setQueriedNotes(updatedNotes);
     setSelectedNotes(
       selectedNotes.map((note) =>
         note.id === noteId
@@ -106,7 +106,7 @@ export default function SemanticDeleteModal() {
         </DialogHeader>
         <DialogBody className="px-4 py-1 max-h-80 overflow-y-auto">
           <ul className="space-y-1">
-            {notesToDelete?.map((note) => (
+            {queriedNotes?.map((note) => (
               <li key={note.id} className="flex flex-start py-1 px-2">
                 <Checkbox
                   checked={selectedNotes.some((n) => n.id === note.id)}
