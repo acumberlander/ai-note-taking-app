@@ -28,15 +28,26 @@ export type NoteStore = {
    * @returns
    */
   setSemanticDeleteModalState: (isOpen: boolean) => void;
+  /**
+   * Opens or closes the semantic edit note modal based on the boolean passed in.
+   * @param isOpen
+   * @returns
+   */
+  setSemanticEditModalState: (isOpen: boolean) => void;
+  semanticEditModalIsOpen: boolean;
   noteToDelete?: Note;
   setNoteToDelete: (note: Note) => void;
-  notesToDelete: Note[];
+  setNotesToEdit: (notes: Note[]) => void;
+  queriedNotes: Note[];
+  editedNotes: Note[];
+  setEditedNotes: (notes: Note[]) => void;
   setNotesToDelete: (notes: Note[]) => void;
   updateAiResponse: (value: string | undefined) => void;
   fetchNotes: () => Promise<void>;
   addNote: ({ title, content }: NewNote) => Promise<void>;
   deleteNote: (id: number) => Promise<void>;
   deleteNotes: (notes: Note[]) => Promise<void>;
+  updateNotes: (notes: Note[]) => Promise<boolean>;
   updateNote: (id: number, { title, content }: NewNote) => Promise<void>;
   semanticQuery: (query: string) => Promise<void>;
 };

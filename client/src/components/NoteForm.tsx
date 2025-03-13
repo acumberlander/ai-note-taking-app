@@ -80,7 +80,7 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
             />
           </>
         )}
-        {!isFilter ? (
+        {!isFilter && (
           <div className="flex items-center gap-2">
             <button
               type="submit"
@@ -101,7 +101,7 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
               />
             </button>
           </div>
-        ) : null}
+        )}
       </form>
     </div>
   );
