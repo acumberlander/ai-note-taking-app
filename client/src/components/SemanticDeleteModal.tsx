@@ -91,43 +91,44 @@ export default function SemanticDeleteModal() {
 
   return (
     <Dialog
+      size="xl"
       open={semanticDeleteModalIsOpen}
       handler={handleModalState}
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
     >
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-auto p-6">
-        <DialogHeader className="relative p-4 flex flex-col">
-          <Typography variant="h4" color="blue-gray">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-8">
+        <DialogHeader className="relative p-6 flex flex-col">
+          <Typography variant="h2" color="blue-gray" className="text-4xl">
             Delete Notes
           </Typography>
-          <Typography className="mt-2 text-gray-600">
+          <Typography className="mt-4 text-gray-600 text-2xl">
             Select the notes you wish to delete.
           </Typography>
         </DialogHeader>
-        <DialogBody className="px-4 py-1 max-h-80 overflow-y-auto">
-          <ul className="space-y-1">
+        <DialogBody className="px-6 py-4 max-h-96 overflow-y-auto">
+          <ul className="space-y-4">
             {queriedNotes?.map((note) => (
-              <li key={note.id} className="flex flex-start py-1 px-2">
+              <li key={note.id} className="flex flex-start py-3 px-4">
                 <Checkbox
                   checked={selectedNotes.some((n) => n.id === note.id)}
                   onChange={() => handleCheckboxChange(note)}
-                  containerProps={{ className: "mr-2" }}
+                  containerProps={{ className: "mr-4 scale-150" }}
                 />
                 <div
                   onClick={() => handleHideContent(note.id)}
-                  className="flex flex-col p-1.5 border rounded shadow-sm cursor-pointer w-full hover:bg-gray-50"
+                  className="flex flex-col p-3 border-2 rounded shadow-md cursor-pointer w-full hover:bg-gray-50"
                 >
                   <div className="flex">
                     <Typography
                       variant="subtitle1"
-                      className="font-medium font-bold"
+                      className="text-2xl font-bold"
                     >
                       {note.title}
                     </Typography>
                   </div>
                   {note?.contentHidden ? null : (
-                    <div className="mt-1">
-                      <Typography variant="caption" color="gray">
+                    <div className="mt-3">
+                      <Typography variant="paragraph" color="gray" className="text-xl">
                         {note.content}
                       </Typography>
                     </div>
@@ -137,20 +138,22 @@ export default function SemanticDeleteModal() {
             ))}
           </ul>
         </DialogBody>
-        <DialogFooter className="flex justify-end space-x-2 p-4">
+        <DialogFooter className="flex justify-end space-x-4 p-6">
           <Button
-            className="cursor-pointer p-2"
+            className="cursor-pointer p-4 text-xl"
             variant="outlined"
             color="gray"
             onClick={() => handleModalState(false)}
+            size="lg"
           >
             Cancel
           </Button>
           <Button
-            className="cursor-pointer p-2"
+            className="cursor-pointer p-4 text-xl"
             variant="filled"
             color="red"
             onClick={handleDelete}
+            size="lg"
           >
             Delete
           </Button>
