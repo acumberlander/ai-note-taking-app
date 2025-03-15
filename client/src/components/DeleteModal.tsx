@@ -28,12 +28,12 @@ export default function DeleteModal() {
 
   return (
     <Dialog
-      size="sm"
+      size="xl"
       open={deleteModalIsOpen}
       handler={handleCloseModal}
       className="fixed inset-0 flex items-center justify-center p-4 text-center bg-black/50"
     >
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl p-8">
         <DialogHeader className="relative m-0 block">
           <Typography variant="h4" color="blue-gray">
             Are you sure you want to delete this note?
