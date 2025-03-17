@@ -4,6 +4,7 @@ import RefreshButton from "./RefreshButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMicrophone } from "@fortawesome/free-solid-svg-icons";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
+import { FourSquare } from "react-loading-indicators";
 import { useForm } from "@/hooks/useForm";
 
 type NoteFormProps = {
@@ -17,6 +18,7 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
     content,
     isFilter,
     isRecording,
+    noteFormLoading,
     setTitle,
     setContent,
     setIsFilter,
@@ -53,8 +55,18 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
 
       <form
         onSubmit={handleSubmit}
-        className="note-form bg-gray-100 p-4 rounded-lg"
+        className="note-form bg-gray-100 p-4 rounded-lg relative"
       >
+        {noteFormLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10 pb-8 rounded">
+            <FourSquare
+              color="#249fe4"
+              size="large"
+              text="Adding Note..."
+              textColor=""
+            />
+          </div>
+        )}
         {isFilter ? (
           <input
             type="text"

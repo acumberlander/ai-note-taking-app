@@ -12,9 +12,13 @@ export const useForm = ({ setQuery }: UseFormProps) => {
   const [filter, setFilter] = useState("");
   const [isFilter, setIsFilter] = useState(false);
 
-  const { addNote, fetchNotes, updateAiResponse } = useNoteStore(
-    (state) => state
-  );
+  const {
+    addNote,
+    fetchNotes,
+    updateAiResponse,
+    noteFormLoading,
+    setNoteFormLoading,
+  } = useNoteStore((state) => state);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFilter(e.target.value);
@@ -30,7 +34,9 @@ export const useForm = ({ setQuery }: UseFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return;
+    setNoteFormLoading(true);
     await addNote({ title, content });
+    setNoteFormLoading(false);
     clearInputs();
     await refreshNotes();
   };
@@ -56,6 +62,7 @@ export const useForm = ({ setQuery }: UseFormProps) => {
     content,
     isFilter,
     isRecording,
+    noteFormLoading,
     setTitle,
     setContent,
     setIsFilter,

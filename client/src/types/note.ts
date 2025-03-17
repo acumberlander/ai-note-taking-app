@@ -11,8 +11,10 @@ export type NoteStore = {
   allNotes: Note[];
   aiResponse?: string;
   deleteModalIsOpen: boolean;
-  isLoading: boolean;
-  setIsLoading: (loadingState: boolean) => void;
+  noteFormLoading: boolean;
+  noteListLoading: boolean;
+  setNoteListLoading: (loadingState: boolean) => void;
+  setNoteFormLoading: (loadingState: boolean) => void;
   queryIntent: string;
   setQueryIntent: (intent: string) => void;
   /**

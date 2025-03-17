@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import NoteTranscription from "@/components/NoteTranscription";
@@ -12,17 +15,34 @@ import SemanticEditModal from "@/components/SemanticEditModal";
 import { useForm } from "@/hooks/useForm";
 
 export default function Home() {
-  const { isLoading } = useNoteStore();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { noteListLoading } = useNoteStore();
   const { query, setQuery, filteredNotes } = useNotes();
   const { refreshNotes } = useForm({ setQuery });
 
+  // Redirect unauthenticated users to /auth
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/auth");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Mosaic color="#2a9cef" size="large" text="Loading..." textColor="" />
+      </div>
+    );
+  }
+
   return (
-    <main className="container mx-auto p-16">
-      <h1 className="text-3xl font-bold mb-4">AI Note-Taking App</h1>
+    <div className="container mx-auto p-4 md:p-8 pt-6">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Your Notes</h1>
       <NoteForm setQuery={setQuery} />
       <NoteTranscription />
-      {isLoading ? (
-        <div className="flex justify-center pt-80">
+      {noteListLoading ? (
+        <div className="flex justify-center py-20">
           <Mosaic color="#2a9cef" size="large" text="Loading" textColor="" />
         </div>
       ) : (
@@ -33,6 +53,6 @@ export default function Home() {
           <SemanticEditModal refreshNotes={refreshNotes} />
         </>
       )}
-    </main>
+    </div>
   );
 }
