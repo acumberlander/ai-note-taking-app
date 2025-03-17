@@ -36,6 +36,7 @@ export const classifyIntent = async (
   | "search"
   | "create_note"
   | "delete_notes"
+  | "delete_all"
   | "edit_notes"
   | "request"
 > => {
@@ -46,10 +47,11 @@ export const classifyIntent = async (
   2. "search" - if the user wants to search for something specific (examples: "find notes about AI", "show me notes about meetings").
   3. "create_note" - if the user wants to create a new note with some content they define/dictate (examples: "write this down", "create a note that says" )
   4. "request" - if the user wants you to be inventive and write an answer. ("can you write a grocery list for me with healthy items?", "Please create a good schedule for workouts I can do on leg day")
-  5. "delete_notes" - if the user wants you to delete notes based on the content they define/dictate ( examples: "delete notes related to health", "get rid of notes that talk about food", "remove notes that mention technology")
-  6. "edit_notes" - if the user wants to modify or update existing notes (examples: "edit my notes about food to include peanut allergy", "update appointment notes to mention my car isn't working", "revise travel notes to include the new flight time")
+  5. "delete_notes" - if the user wants you to delete notes based on the content they define/dictate (examples: "delete notes related to health", "get rid of notes that talk about food", "remove notes that mention technology")
+  6. "delete_all" - if the user wants to delete ALL their notes without any specific criteria (examples: "delete all my notes", "remove everything", "clear all notes", "get rid of all my notes")
+  7. "edit_notes" - if the user wants to modify or update existing notes (examples: "edit my notes about food to include peanut allergy", "update appointment notes to mention my car isn't working", "revise travel notes to include the new flight time")
   
-  Only return one of these exact strings as the response: "show_all", "search", "create_note", "request", "delete_notes", or "edit_notes". No explanation or other text.
+  Only return one of these exact strings as the response: "show_all", "search", "create_note", "request", "delete_notes", "delete_all", or "edit_notes". No explanation or other text.
   `;
 
   const completion = await openai.chat.completions.create({
@@ -68,6 +70,10 @@ export const classifyIntent = async (
   if (classification === "delete_notes") {
     console.log("delete intent");
     return "delete_notes";
+  }
+  if (classification === "delete_all") {
+    console.log("delete all intent");
+    return "delete_all";
   }
   if (classification === "edit_notes") {
     console.log("edit intent");

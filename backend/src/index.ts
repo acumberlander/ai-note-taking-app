@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { noteRoutes } from "./routes/noteRoutes";
 import { transcribeRoutes } from "./routes/transcribeRoutes";
+import { userRoutes } from "./routes/userRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 import path from "path";
 import fs from "fs";
@@ -20,6 +21,7 @@ if (!fs.existsSync(uploadsDir)) {
 
 app.use("/api/notes", noteRoutes);
 app.use("/api/transcribe", transcribeRoutes);
+app.use("/api/users", userRoutes);
 
 app.use(errorHandler); // Global error handling middleware
 

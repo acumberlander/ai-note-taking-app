@@ -1,6 +1,7 @@
 import { ChangeEvent, useState, useEffect } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
+import { useUserStore } from "@/store/useUserStore";
 
 interface UseFormProps {
   setQuery: (query: string) => void;
@@ -12,9 +13,8 @@ export const useForm = ({ setQuery }: UseFormProps) => {
   const [filter, setFilter] = useState("");
   const [isFilter, setIsFilter] = useState(false);
 
-  const { addNote, fetchNotes, updateAiResponse } = useNoteStore(
-    (state) => state
-  );
+  const { addNote, fetchNotes, updateAiResponse } = useNoteStore();
+  const { user } = useUserStore();
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFilter(e.target.value);
@@ -30,7 +30,7 @@ export const useForm = ({ setQuery }: UseFormProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) return;
-    await addNote({ title, content });
+    await addNote({ title, content, user_id: user?.id || null });
     clearInputs();
     await refreshNotes();
   };
@@ -39,7 +39,9 @@ export const useForm = ({ setQuery }: UseFormProps) => {
     setQuery("");
     clearInputs();
     updateAiResponse("");
-    await fetchNotes();
+    if (user) {
+      await fetchNotes(user.id);
+    }
   };
 
   const { text, isRecording } = useSpeechToText();

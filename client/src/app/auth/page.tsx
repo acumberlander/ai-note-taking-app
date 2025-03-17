@@ -1,27 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signUpWithEmail, signInWithEmail, signInAsGuest } from "@/lib/auth";
-import { useAuth } from "@/context/AuthContext";
+import {
+  signUpWithEmail,
+  signInWithEmail,
+  signInAsGuest,
+} from "@/lib/auth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import { useRouter } from "next/navigation";
 import { FourSquare } from "react-loading-indicators";
+import axios from "axios";
+import { useUserStore } from "@/store/useUserStore";
+import { _User } from "@/types/_user";
+import { _fetchUser } from "../api/postgresRequests";
 
 export default function AuthPage() {
-  const { user, loading } = useAuth();
+  // Initialize Supabase auth with Zustand store
+  useSupabaseAuth();
+  
   const router = useRouter();
+  const { user, loading, setUser, setLoading, createUser } = useUserStore();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-
-  // Redirect authenticated users AFTER the component renders
-  useEffect(() => {
-    if (user) {
-      router.push("/");
-    }
-  }, [user, router]);
 
   if (loading) {
     return (
@@ -43,11 +47,30 @@ export default function AuthPage() {
 
     try {
       if (isRegistering) {
-        await signUpWithEmail(email, password);
+        const newUser = await signUpWithEmail(email, password);
+        if (newUser && newUser.id) {
+          // Create user in your backend database (if not already created)
+          await axios.post(
+            `${
+              process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+            }/api/users/${newUser.id}`,
+            { id: newUser.id, is_anonymous: false, email }
+          );
+          setUser({ id: newUser.id } as _User);
+          router.push("/");
+        }
       } else {
-        await signInWithEmail(email, password);
+        const returningUser = await signInWithEmail(email, password);
+        if (returningUser && returningUser.id) {
+          // Check and create user in backend if needed
+          let postgresUser = await _fetchUser(returningUser.id);
+          if (!postgresUser.data || postgresUser.data === null) {
+            await createUser(returningUser.id, false);
+          }
+          setUser({ id: returningUser.id } as _User);
+          router.push("/");
+        }
       }
-      // No need to call router.push("/") here, useEffect will handle it
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -55,13 +78,62 @@ export default function AuthPage() {
     }
   };
 
+  // const handleOAuthSignIn = async (
+  //   provider: "google" | "github" | "linkedin"
+  // ) => {
+  //   try {
+  //     const oauthUser = await signInWithOAuth(provider);
+  //     if (oauthUser && oauthUser.uid) {
+  //       // Check and create user in backend if needed
+  //       let postgresUser = await axios.get(
+  //         `${
+  //           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+  //         }/api/users/${oauthUser.uid}`
+  //       );
+  //       if (!postgresUser.data || postgresUser.data === null) {
+  //         postgresUser = await axios.post(
+  //           `${
+  //             process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+  //           }/api/users/${oauthUser.uid}`,
+  //           { id: oauthUser.uid, is_anonymous: false, email: oauthUser.email }
+  //         );
+  //       }
+  //       setUser({ id: oauthUser.uid } as _User);
+  //     }
+  //   } catch (err: any) {
+  //     setError(err.message);
+  //   }
+  // };
+
   const handleGuestSignIn = async () => {
     setIsSubmitting(true);
     setError("");
 
     try {
-      await signInAsGuest();
-      // No need to call router.push("/") here, useEffect will handle it
+      // Check if guest user ID exists in localStorage
+      const storedGuestId = localStorage.getItem("guestUserId");
+      
+      if (storedGuestId) {
+        // User was previously a guest, fetch their info
+        let postgresUser = await _fetchUser(storedGuestId);
+        if (!postgresUser.data || postgresUser.data === null) {
+          // Create the user in database if they don't exist
+          await createUser(storedGuestId, true);
+        }
+        setUser({ id: storedGuestId } as _User);
+      } else {
+        // New guest user, create anonymous account
+        const guestUser = await signInAsGuest();
+        if (guestUser && guestUser.id) {
+          // Save guest user ID to localStorage
+          localStorage.setItem("guestUserId", guestUser.id);
+          // Create user in backend
+          await createUser(guestUser.id, true);
+          setUser({ id: guestUser.id } as _User);
+        }
+      }
+      
+      router.push("/");
     } catch (err: any) {
       console.error("Guest sign-in error:", err);
       setError(err.message || "Failed to sign in as guest");
@@ -122,6 +194,30 @@ export default function AuthPage() {
         </form>
 
         <div className="text-center my-4 text-gray-500">OR</div>
+
+        {/* <button
+          onClick={handleOAuthSignIn.bind(null, "google")}
+          className="w-full p-3 mb-2 text-white bg-red-500 rounded hover:bg-red-600"
+          disabled={isSubmitting}
+        >
+          Sign in with Google
+        </button>
+        <button
+          onClick={handleOAuthSignIn.bind(null, "github")}
+          className="w-full p-3 mb-2 text-white bg-gray-800 rounded hover:bg-gray-900"
+          disabled={isSubmitting}
+        >
+          Sign in with GitHub
+        </button>
+        <button
+          onClick={handleOAuthSignIn.bind(null, "linkedin")}
+          className="w-full p-3 mb-2 text-white bg-blue-700 rounded hover:bg-blue-800"
+          disabled={isSubmitting}
+        >
+          Sign in with LinkedIn
+        </button>
+
+        <div className="text-center my-4 text-gray-500">OR</div> */}
 
         <button
           onClick={handleGuestSignIn}

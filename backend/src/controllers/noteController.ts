@@ -18,7 +18,7 @@ export const createNoteController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { title, content } = req.body;
+  const { title, content, user_id } = req.body;
 
   if (!title || !content) {
     res.status(400).json({ error: "Title and content are required" });
@@ -26,7 +26,8 @@ export const createNoteController = async (
   }
 
   try {
-    const note = new Note(title, content);
+    const note = new Note(title, content, user_id);
+    console.log("note: ", note);
     const savedNote = await note.save();
     res.json(savedNote);
   } catch (err) {
@@ -58,6 +59,12 @@ export const updateNoteController = async (
   }
 
   try {
+    const existingNote = await Note.findById(Number(id));
+    if (!existingNote) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
     const updatedNote = await Note.updateNoteById(Number(id), title, content);
 
     if (!updatedNote) {
@@ -84,13 +91,14 @@ export const getNotesController = async (
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
+    const id = req.params.id as string;
 
     if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
       res.status(400).json({ error: "Invalid pagination parameters" });
       return;
     }
 
-    const notes = await Note.findPaginated(page, limit);
+    const notes = await Note.findPaginated(page, limit, id);
     res.json(notes);
   } catch (err) {
     res.status(500).json({ error: "Error fetching notes", err });
@@ -108,7 +116,14 @@ export const getNoteByIdController = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+
     const note = await Note.findById(parseInt(id));
+
+    if (!note) {
+      res.status(404).json({ error: "Note not found or not authorized" });
+      return;
+    }
+
     res.json(note);
   } catch (err) {
     res.status(500).json({ error: "Error fetching note by id", err });
@@ -127,15 +142,16 @@ export const searchNotesController = async (
   res: Response
 ): Promise<void> => {
   const { query } = req.query;
+  const user_id = req.query.user_id as string;
 
   if (!query || typeof query !== "string") {
     console.log("Invalid query - returning all notes");
-    const allNotes = await Note.findPaginated(1, 10);
+    const allNotes = await Note.findPaginated(1, 10, user_id);
     res.json(allNotes);
     return;
   }
 
-  const notes = await Note.searchByKeyword(query);
+  const notes = await Note.searchByKeyword(query, user_id);
   res.json(notes);
 };
 
@@ -149,12 +165,12 @@ export const semanticQueryController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { query } = req.body;
+    const { query, user_id } = req.body;
     let notes: Note[] = [];
     let editedNotes: Note[] = [];
 
     if (!query || typeof query !== "string" || query.trim() === "") {
-      notes = await Note.findPaginated(1, 20);
+      notes = await Note.findPaginated(1, 20, user_id);
       res.json({
         notes,
         message: "I didn't hear anything, so I returned all your notes.",
@@ -164,19 +180,18 @@ export const semanticQueryController = async (
 
     const intent = await classifyIntent(query);
     if (intent === "show_all") {
-      notes = await Note.findPaginated(1, 20);
-      res.json({
-        notes,
-        message: "Here are all your notes.",
-      });
+      notes = await Note.findPaginated(1, 20, user_id);
     } else if (intent === "create_note") {
       const trimmedQuery = await trimCommand(query);
-      createNoteFromBackend(trimmedQuery);
-      notes = await Note.findPaginated(1, 20);
+      await createNoteFromBackend(trimmedQuery, user_id);
+      notes = await Note.findPaginated(1, 20, user_id);
     } else if (intent === "request") {
       const newContent = await generateContent(query);
-      createNoteFromBackend(newContent);
-      notes = await Note.findPaginated(1, 20);
+      await createNoteFromBackend(newContent, user_id);
+      notes = await Note.findPaginated(1, 20, user_id);
+    } else if (intent === "delete_all") {
+      // Get all user's notes for deletion
+      notes = await Note.findPaginated(1, 100, user_id); // Fetch up to 100 notes
     } else if (
       intent === "delete_notes" ||
       intent === "search" ||
@@ -187,7 +202,7 @@ export const semanticQueryController = async (
         intent === "delete_notes" || intent === "edit_notes"
           ? await trimCommand(query)
           : query;
-      notes = await Note.searchByEmbedding(searchQuery);
+      notes = await Note.searchByEmbedding(searchQuery, user_id);
       if (intent === "edit_notes") {
         editedNotes = await semanticEditNotes(query, notes);
       }
@@ -211,7 +226,7 @@ export const semanticQueryController = async (
  * @param content
  * @returns
  */
-export async function createNoteFromBackend(content: string) {
+export async function createNoteFromBackend(content: string, user_id: string) {
   let title = await generateTitle(content);
 
   // Fallback if title generation fails
@@ -220,7 +235,7 @@ export async function createNoteFromBackend(content: string) {
   }
 
   try {
-    const note = new Note(title, content);
+    const note = new Note(title, content, user_id);
     const savedNote = await note.save();
     return savedNote;
   } catch (error) {
@@ -240,6 +255,7 @@ export const deleteNoteByIdController = async (
   res: Response
 ): Promise<void> => {
   const { id } = req.params;
+  const user_id = (req.query.user_id as string) || (req.body.user_id as string);
 
   if (!id || isNaN(Number(id))) {
     res.status(400).json({ error: "Invalid note ID" });
@@ -247,6 +263,12 @@ export const deleteNoteByIdController = async (
   }
 
   try {
+    const existingNote = await Note.findById(Number(id));
+    if (!existingNote) {
+      res.status(404).json({ error: "Note not found" });
+      return;
+    }
+
     const deleted = await Note.deleteNoteById(Number(id));
 
     if (deleted) {
@@ -269,13 +291,26 @@ export const deleteNotesController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { noteIds } = req.body;
+  const { noteIds, user_id } = req.body;
 
   if (!Array.isArray(noteIds) || noteIds.length === 0) {
     res
       .status(400)
       .json({ error: "Invalid note IDs: must be a non-empty array" });
     return;
+  }
+
+  if (user_id) {
+    for (const id of noteIds) {
+      const note = await Note.findById(id);
+      if (!note) {
+        res.status(403).json({
+          error:
+            "You do not have permission to delete one or more of these notes",
+        });
+        return;
+      }
+    }
   }
 
   try {
@@ -303,11 +338,26 @@ export const updateNotesController = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { notes } = req.body;
+  const { notes, user_id } = req.body;
 
   if (!Array.isArray(notes) || notes.length === 0) {
     res.status(400).json({ error: "Notes array must not be empty" });
     return;
+  }
+
+  if (user_id) {
+    for (const note of notes) {
+      if (!note.id) continue;
+
+      const existingNote = await Note.findById(note.id);
+      if (!existingNote) {
+        res.status(403).json({
+          error:
+            "You do not have permission to update one or more of these notes",
+        });
+        return;
+      }
+    }
   }
 
   try {

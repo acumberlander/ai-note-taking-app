@@ -10,6 +10,8 @@ import {
   _updateNotes,
 } from "@/app/api/postgresRequests";
 import { Note, NoteStore } from "@/types/note";
+import { _User } from "@/types/_user";
+import { useUserStore } from "./useUserStore";
 
 export const useNoteStore = create<NoteStore>()(
   devtools((set) => ({
@@ -70,14 +72,15 @@ export const useNoteStore = create<NoteStore>()(
         aiResponse: value,
       }));
     },
-    fetchNotes: async () => {
+    fetchNotes: async (user_id) => {
       set({ isLoading: true });
-      const data = await _fetchAllNotes();
-
-      set({ allNotes: [...data], isLoading: false });
+      if (user_id) {
+        const data = await _fetchAllNotes(user_id);
+        set({ allNotes: [...data], isLoading: false });
+      }
     },
-    addNote: async ({ title, content }) => {
-      const note = await _createNote({ title, content });
+    addNote: async ({ title, content, user_id }) => {
+      const note = await _createNote({ title, content, user_id });
       set((state) => ({
         allNotes: [...state.allNotes, note],
       }));
@@ -92,7 +95,9 @@ export const useNoteStore = create<NoteStore>()(
       }
     },
     deleteNotes: async (notes: Note[]) => {
-      const deleteSuccessful = await _deleteNotes(notes);
+      const { user } = useUserStore.getState();
+      const user_id = user?.id || null;
+      const deleteSuccessful = await _deleteNotes(notes, user_id);
       if (deleteSuccessful) {
         set((state) => ({
           allNotes: state.allNotes.filter(
@@ -122,8 +127,8 @@ export const useNoteStore = create<NoteStore>()(
       }
       return false;
     },
-    updateNote: async (id, { title, content }) => {
-      const updatedNote = await _updateNote(id, { title, content });
+    updateNote: async (id, { title, content, user_id }) => {
+      const updatedNote = await _updateNote(id, { title, content, user_id });
       set((state) => ({
         allNotes: state.allNotes.map((note) =>
           note.id === id ? updatedNote : note
@@ -131,8 +136,13 @@ export const useNoteStore = create<NoteStore>()(
       }));
     },
     semanticQuery: async (query) => {
-      const result = await _semanticQuery(query);
-      if (result.intent === "delete_notes" && result.notes.length > 0) {
+      const { user } = useUserStore.getState();
+      const user_id = user?.id || null;
+      const result = await _semanticQuery(query, user_id);
+      if (
+        (result.intent === "delete_notes" || result.intent === "delete_all") &&
+        result.notes.length > 0
+      ) {
         set({
           allNotes: result.notes,
           aiResponse: result.message,
