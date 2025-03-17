@@ -2,7 +2,6 @@
 
 import { useUserStore } from "@/store/useUserStore";
 import { signOut } from "@/lib/auth";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -26,14 +25,9 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo and brand */}
         <Link href="/" className="flex items-center space-x-2">
-          <Image
-            src="/whispr-app.png"
-            alt="Whispr Logo"
-            width={32}
-            height={32}
-            className="object-contain"
-          />
-          <span className="text-xl font-semibold text-gray-800">Whispr</span>
+          <span className="text-xl font-semibold text-gray-800">
+            WhisprNotes
+          </span>
         </Link>
 
         {/* Mobile menu button */}

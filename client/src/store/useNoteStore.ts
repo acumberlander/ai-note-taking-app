@@ -19,7 +19,8 @@ export const useNoteStore = create<NoteStore>()(
     allNotes: [],
     aiResponse: "",
     queryIntent: "",
-    isLoading: true,
+    noteListLoading: false,
+    noteFormLoading: false,
     editedNotes: [],
     deleteModalIsOpen: false,
     semanticDeleteModalIsOpen: false,
@@ -37,9 +38,14 @@ export const useNoteStore = create<NoteStore>()(
         editedNotes: updatedNotes,
       }));
     },
-    setIsLoading: (loadingState: boolean) => {
+    setNoteListLoading: (loadingState: boolean) => {
       set(() => ({
-        isLoading: loadingState,
+        noteListLoading: loadingState,
+      }));
+    },
+    setNoteFormLoading: (loadingState: boolean) => {
+      set(() => ({
+        noteFormLoading: loadingState,
       }));
     },
     setQueryIntent: (intent: string) => {
@@ -72,12 +78,11 @@ export const useNoteStore = create<NoteStore>()(
         aiResponse: value,
       }));
     },
-    fetchNotes: async (user_id) => {
-      set({ isLoading: true });
-      if (user_id) {
-        const data = await _fetchAllNotes(user_id);
-        set({ allNotes: [...data], isLoading: false });
-      }
+    fetchNotes: async (user_id: string | null) => {
+      set({ noteListLoading: true });
+      const data = await _fetchAllNotes(user_id || "");
+
+      set({ allNotes: [...data], noteListLoading: false });
     },
     addNote: async ({ title, content, user_id }) => {
       const note = await _createNote({ title, content, user_id });

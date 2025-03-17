@@ -14,7 +14,10 @@ export type NoteStore = {
   allNotes: Note[];
   aiResponse?: string;
   deleteModalIsOpen: boolean;
-  isLoading: boolean;
+  noteFormLoading: boolean;
+  noteListLoading: boolean;
+  setNoteListLoading: (loadingState: boolean) => void;
+  setNoteFormLoading: (loadingState: boolean) => void;
   queryIntent: string;
   semanticDeleteModalIsOpen: boolean;
   semanticEditModalIsOpen: boolean;
