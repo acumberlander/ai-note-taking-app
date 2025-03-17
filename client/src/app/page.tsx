@@ -17,7 +17,7 @@ import { useForm } from "@/hooks/useForm";
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const { isLoading } = useNoteStore();
+  const { noteListLoading } = useNoteStore();
   const { query, setQuery, filteredNotes } = useNotes();
   const { refreshNotes } = useForm({ setQuery });
 
@@ -41,7 +41,7 @@ export default function Home() {
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Your Notes</h1>
       <NoteForm setQuery={setQuery} />
       <NoteTranscription />
-      {isLoading ? (
+      {noteListLoading ? (
         <div className="flex justify-center py-20">
           <Mosaic color="#2a9cef" size="large" text="Loading" textColor="" />
         </div>
