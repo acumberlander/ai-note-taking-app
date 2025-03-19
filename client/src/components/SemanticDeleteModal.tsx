@@ -6,17 +6,16 @@ import {
   Checkbox,
   Typography,
   DialogBody,
-  IconButton,
   DialogHeader,
   DialogFooter,
 } from "@material-tailwind/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useNoteStore } from "@/store/useNoteStore";
 import { Note } from "@/types/note";
 
 export default function SemanticDeleteModal() {
   const {
     queriedNotes,
+    queryIntent,
     semanticDeleteModalIsOpen,
     deleteNotes,
     setQueriedNotes,
@@ -37,9 +36,16 @@ export default function SemanticDeleteModal() {
 
       // Update the store with the new array
       setQueriedNotes(notesWithHiddenContent);
-      setSelectedNotes(notesWithHiddenContent);
+
+      // For delete_all intent, pre-select all notes
+      if (queryIntent === "delete_all") {
+        setSelectedNotes(notesWithHiddenContent);
+      } else {
+        // For other intents, start with no notes selected
+        setSelectedNotes([]);
+      }
     }
-  }, [semanticDeleteModalIsOpen]);
+  }, [semanticDeleteModalIsOpen, queryIntent]);
 
   const handleModalState = (isOpen = false) => {
     setSemanticDeleteModalState(isOpen);
@@ -50,6 +56,18 @@ export default function SemanticDeleteModal() {
       setSelectedNotes(selectedNotes.filter((n) => n.id !== note.id));
     } else {
       setSelectedNotes([...selectedNotes, note]);
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (queriedNotes && queriedNotes.length > 0) {
+      if (selectedNotes.length === queriedNotes.length) {
+        // If all are selected, deselect all
+        setSelectedNotes([]);
+      } else {
+        // Otherwise, select all
+        setSelectedNotes([...queriedNotes]);
+      }
     }
   };
 
@@ -99,13 +117,34 @@ export default function SemanticDeleteModal() {
       <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-8">
         <DialogHeader className="relative p-6 flex flex-col">
           <Typography variant="h2" color="blue-gray" className="text-4xl">
-            Delete Notes
+            {queryIntent === "delete_all" ? "Delete All Notes" : "Delete Notes"}
           </Typography>
           <Typography className="mt-4 text-gray-600 text-2xl">
-            Select the notes you wish to delete.
+            {queryIntent === "delete_all"
+              ? "You are about to delete all your notes. Please confirm your selection."
+              : "Select the notes you wish to delete."}
           </Typography>
         </DialogHeader>
         <DialogBody className="px-6 py-4 max-h-96 overflow-y-auto">
+          {!queryIntent.includes("delete_all") && (
+            <div className="flex justify-end mb-4">
+              <Button
+                size="sm"
+                variant={
+                  selectedNotes.length === queriedNotes?.length
+                    ? "outlined"
+                    : "filled"
+                }
+                color="blue"
+                onClick={handleSelectAll}
+                className="text-sm"
+              >
+                {selectedNotes.length === queriedNotes?.length
+                  ? "Deselect All"
+                  : "Select All"}
+              </Button>
+            </div>
+          )}
           <ul className="space-y-4">
             {queriedNotes?.map((note) => (
               <li key={note.id} className="flex flex-start py-3 px-4">
@@ -128,7 +167,11 @@ export default function SemanticDeleteModal() {
                   </div>
                   {note?.contentHidden ? null : (
                     <div className="mt-3">
-                      <Typography variant="paragraph" color="gray" className="text-xl">
+                      <Typography
+                        variant="paragraph"
+                        color="gray"
+                        className="text-[1.75em] markdown-content"
+                      >
                         {note.content}
                       </Typography>
                     </div>
@@ -140,7 +183,7 @@ export default function SemanticDeleteModal() {
         </DialogBody>
         <DialogFooter className="flex justify-end space-x-4 p-6">
           <Button
-            className="cursor-pointer p-4 text-xl"
+            className="text-lg font-medium px-5 py-2.5 cursor-pointer"
             variant="outlined"
             color="gray"
             onClick={() => handleModalState(false)}
@@ -149,13 +192,16 @@ export default function SemanticDeleteModal() {
             Cancel
           </Button>
           <Button
-            className="cursor-pointer p-4 text-xl"
+            className="text-lg font-medium px-5 py-2.5 cursor-pointer text-white"
             variant="filled"
             color="red"
             onClick={handleDelete}
             size="lg"
+            disabled={selectedNotes.length === 0}
           >
-            Delete
+            {queryIntent === "delete_all"
+              ? `Delete All Notes (${selectedNotes.length})`
+              : `Delete Selected (${selectedNotes.length})`}
           </Button>
         </DialogFooter>
       </div>

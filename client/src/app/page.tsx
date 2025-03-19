@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
 import NoteForm from "@/components/NoteForm";
 import NoteList from "@/components/NoteList";
 import NoteTranscription from "@/components/NoteTranscription";
@@ -10,15 +10,20 @@ import DeleteModal from "@/components/DeleteModal";
 import SemanticDeleteModal from "@/components/SemanticDeleteModal";
 import { Mosaic } from "react-loading-indicators";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useUserStore } from "@/store/useUserStore";
 import useNotes from "@/hooks/useNotes";
 import SemanticEditModal from "@/components/SemanticEditModal";
 import { useForm } from "@/hooks/useForm";
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  // Initialize Supabase auth with Zustand store
+  useSupabaseAuth();
+
+  // Get user state from Zustand store
+  const { user, loading } = useUserStore();
   const router = useRouter();
   const { noteListLoading } = useNoteStore();
-  const { query, setQuery, filteredNotes } = useNotes();
+  const { query, setQuery, filteredNotes, createTestNotes } = useNotes();
   const { refreshNotes } = useForm({ setQuery });
 
   // Redirect unauthenticated users to /auth
@@ -47,7 +52,11 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <NoteList notes={filteredNotes} query={query} />
+          <NoteList
+            notes={filteredNotes}
+            query={query}
+            createTestNotes={createTestNotes}
+          />
           <DeleteModal />
           <SemanticDeleteModal />
           <SemanticEditModal refreshNotes={refreshNotes} />

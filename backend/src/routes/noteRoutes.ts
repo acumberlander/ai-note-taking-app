@@ -14,7 +14,7 @@ import {
 const router = express.Router();
 
 router.post("/", createNoteController);
-router.get("/", getNotesController);
+router.get("/user/:id", getNotesController);
 router.put("/", updateNotesController);
 router.delete("/", deleteNotesController);
 router.get("/:id", getNoteByIdController);
