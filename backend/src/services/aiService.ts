@@ -101,21 +101,24 @@ The user asked: "${query}"
 The detected intent is: "${intent}"
 
 You will give a response in reference to what the user asked.
-Based on the intent:
-- For "show_all": Mention you're showing all their notes
-- For "search": Mention you found notes matching their search
-- For "create_note": Confirm the note was created with a message like "I've created your note about [brief topic]"
-- For "delete_notes": Confirm which notes were found for deletion
-- For "delete_all": Confirm all notes are ready for deletion
-- For "edit_notes": Say something like "Here are the notes you want to edit."
-- For "request": Confirm you created content based on their request with a message like "I've created a note with [brief description]"
+${
+  notes.length === 0
+    ? `No notes were found matching the user's query. Respond with a message like:
+  "Sorry, I couldn't find any notes related to [brief topic]. Try adjusting the sensitivity to see more results."`
+    : `Based on the intent:
+  - For "show_all": Mention you're showing all their notes
+  - For "search": Mention you found notes matching their search
+  - For "create_note": Confirm the note was created with a message like "I've created your note about [brief topic]"
+  - For "delete_notes": Confirm which notes were found for deletion
+  - For "delete_all": Confirm all notes are ready for deletion
+  - For "edit_notes": Say something like "Here are the notes you want to edit."
+  - For "request": Confirm you created content based on their request with a message like "I've created a note with [brief description]"
 
-The app found these notes that are relevant to the request: ${noteTitles}
+  The app found these notes that are relevant to the request: ${noteTitles}
 
-Please write a short, friendly response summarizing this like:
-"Here are the notes that match your [intent-specific action] about [brief summary of query]."
-
-For create_note and request intents, use "I've created your note about [brief topic]" format.
+  Please write a short, friendly response summarizing this like:
+  "Here are the notes that match your [intent-specific action] about [brief summary of query]."`
+}
 
 Keep the response under 100 characters.
 `;
@@ -130,7 +133,10 @@ Keep the response under 100 characters.
   });
 
   return (
-    completion.choices[0]?.message?.content?.trim() || "Here are your notes."
+    completion.choices[0]?.message?.content?.trim() ||
+    (notes.length === 0
+      ? "Sorry, I couldn't find any notes matching your query. Try adjusting the sensitivity."
+      : "Here are your notes.")
   );
 }
 

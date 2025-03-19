@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Dialog,
@@ -17,17 +17,48 @@ export default function DeleteModal() {
     deleteNote,
     deleteModalIsOpen,
     setDeleteModalState,
+    setNoteToDelete,
   } = useNoteStore();
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Reset isDeleting when modal opens/closes
+  useEffect(() => {
+    if (!deleteModalIsOpen) {
+      setIsDeleting(false);
+    }
+  }, [deleteModalIsOpen]);
+
   const handleCloseModal = () => {
+    setIsDeleting(false);
     setDeleteModalState(false);
+    setNoteToDelete(undefined);
   };
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await deleteNote(note.id);
-    // We don't need to set isDeleting to false since the modal will close
+    if (!note || !note.id) {
+      setIsDeleting(false);
+      console.error("No note to delete");
+      handleCloseModal();
+      return;
+    }
+
+    try {
+      const success = await deleteNote(note.id);
+      if (success) {
+        setIsDeleting(false);
+        handleCloseModal();
+      } else {
+        console.error("Delete operation returned false");
+        setIsDeleting(false);
+        handleCloseModal();
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      handleCloseModal();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
