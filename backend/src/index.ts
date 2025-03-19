@@ -5,8 +5,6 @@ import { noteRoutes } from "./routes/noteRoutes";
 import { transcribeRoutes } from "./routes/transcribeRoutes";
 import { userRoutes } from "./routes/userRoutes";
 import { errorHandler } from "./middleware/errorHandler";
-import path from "path";
-import fs from "fs";
 
 dotenv.config();
 
@@ -18,10 +16,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(cors());
 app.use(express.json());
 
-const uploadsDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Removed the uploads directory creation code
 
 app.use("/api/notes", noteRoutes);
 app.use("/api/transcribe", transcribeRoutes);

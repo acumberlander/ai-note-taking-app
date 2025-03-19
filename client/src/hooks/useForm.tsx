@@ -1,6 +1,5 @@
-import { ChangeEvent, useState, useEffect } from "react";
+import { ChangeEvent, useState } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
-import { useSpeechToText } from "@/app/api/useSpeechToText";
 import { useUserStore } from "@/store/useUserStore";
 import { _createNote } from "@/app/api/postgresRequests";
 
@@ -47,20 +46,13 @@ export const useForm = ({ setQuery }: UseFormProps) => {
     }
   };
 
-  const { text, isRecording } = useSpeechToText();
-
-  useEffect(() => {
-    if (!isRecording && text) {
-      setContent(text);
-    }
-  }, [text, isRecording]);
+  // Remove the useEffect for speech-to-text here since we moved it to NoteForm
 
   return {
     title,
     filter,
     content,
     isFilter,
-    isRecording,
     noteFormLoading,
     setTitle,
     setContent,

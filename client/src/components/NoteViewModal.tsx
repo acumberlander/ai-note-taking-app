@@ -80,6 +80,7 @@ export default function NoteViewModal({
   const handleConfirmDelete = async () => {
     if (currentNote) {
       setDeletedNoteTitle(currentNote.title);
+      setIsDeleting(true); // Set deleting state to true
       await deleteNote(currentNote.id);
       setIsDeleting(false);
       setShowDeleteMessage(true);
@@ -126,6 +127,18 @@ export default function NoteViewModal({
               color="#249fe4"
               size="large"
               text="Saving..."
+              textColor=""
+            />
+          </div>
+        )}
+
+        {/* Deleting Animation Overlay */}
+        {isDeleting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10 rounded-lg">
+            <FourSquare
+              color="#f44336"
+              size="large"
+              text="Deleting..."
               textColor=""
             />
           </div>

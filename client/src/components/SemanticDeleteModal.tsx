@@ -11,6 +11,7 @@ import {
 } from "@material-tailwind/react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { Note } from "@/types/note";
+import { FourSquare } from "react-loading-indicators";
 
 export default function SemanticDeleteModal() {
   const {
@@ -23,7 +24,8 @@ export default function SemanticDeleteModal() {
   } = useNoteStore();
 
   // Local state to track selected notes
-  const [selectedNotes, setSelectedNotes] = useState([]);
+  const [selectedNotes, setSelectedNotes] = useState<Note[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // When queriedNotes changes (or when modal opens), initialize selected notes
   useEffect(() => {
@@ -72,8 +74,9 @@ export default function SemanticDeleteModal() {
   };
 
   const handleDelete = async () => {
+    setIsDeleting(true);
     await deleteNotes(selectedNotes);
-    handleModalState(false);
+    // We don't need to set isDeleting to false since the modal will close
   };
 
   const handleHideContent = (noteId: number) => {
@@ -114,7 +117,19 @@ export default function SemanticDeleteModal() {
       handler={handleModalState}
       className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
     >
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-8">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl mx-auto p-8 relative">
+        {/* Deleting Animation Overlay */}
+        {isDeleting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10 rounded-lg">
+            <FourSquare
+              color="#f44336"
+              size="large"
+              text="Deleting..."
+              textColor=""
+            />
+          </div>
+        )}
+
         <DialogHeader className="relative p-6 flex flex-col">
           <Typography variant="h2" color="blue-gray" className="text-4xl">
             {queryIntent === "delete_all" ? "Delete All Notes" : "Delete Notes"}
@@ -188,6 +203,7 @@ export default function SemanticDeleteModal() {
             color="gray"
             onClick={() => handleModalState(false)}
             size="lg"
+            disabled={isDeleting}
           >
             Cancel
           </Button>
@@ -197,7 +213,7 @@ export default function SemanticDeleteModal() {
             color="red"
             onClick={handleDelete}
             size="lg"
-            disabled={selectedNotes.length === 0}
+            disabled={selectedNotes.length === 0 || isDeleting}
           >
             {queryIntent === "delete_all"
               ? `Delete All Notes (${selectedNotes.length})`
