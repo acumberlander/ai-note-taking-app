@@ -1,7 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
 import { useNoteStore } from "@/store/useNoteStore";
-import { aiLoadingResponses } from "@/constants";
 
 const useNoteTranscription = () => {
   const {
@@ -19,12 +18,12 @@ const useNoteTranscription = () => {
 
   const handleStartRecording = () => {
     reset();
-    updateAiResponse("");
+    updateAiResponse("I'm listening...");
     startRecording();
   };
 
   const handleStopRecording = () => {
-    updateAiResponse(aiLoadingResponses[0]);
+    updateAiResponse("");
     stopRecording();
   };
 
@@ -32,7 +31,7 @@ const useNoteTranscription = () => {
     if (text && !isRecording && !isTranscribing) {
       semanticQuery(text);
     }
-  }, [text, isRecording, isTranscribing, semanticQuery, queryIntent]);
+  }, [text, isRecording, isTranscribing, semanticQuery]);
 
   return {
     error,

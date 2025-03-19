@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import "./globals.css";
+import "./markdown.css";
 
 export const metadata: Metadata = {
   title: "Whispr",
@@ -13,10 +13,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
-        </AuthProvider>
+        <Navbar />
+        <main className="min-h-screen">{children}</main>
       </body>
     </html>
   );
