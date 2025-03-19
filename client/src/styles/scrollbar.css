@@ -1,0 +1,33 @@
+/* Custom scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+  background-color: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.7);
+}
+
+/* Only show scrollbar when needed */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  overflow-y: auto;
+}
+
+/* Hide scrollbar completely when not needed */
+.DialogBody {
+  overflow-y: auto;
+  overflow-y: overlay;
+}
+
+/* Ensure consistent width for form elements */
+.Input, .Textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

@@ -98,14 +98,24 @@ export async function generateQueryResponse(
   const systemPrompt = `
 You are an AI assistant in a note-taking app.
 The user asked: "${query}"
+The detected intent is: "${intent}"
 
 You will give a response in reference to what the user asked.
-1. If the user is asking 
+Based on the intent:
+- For "show_all": Mention you're showing all their notes
+- For "search": Mention you found notes matching their search
+- For "create_note": Confirm the note was created with a message like "I've created your note about [brief topic]"
+- For "delete_notes": Confirm which notes were found for deletion
+- For "delete_all": Confirm all notes are ready for deletion
+- For "edit_notes": Say something like "Here are the notes you want to edit."
+- For "request": Confirm you created content based on their request with a message like "I've created a note with [brief description]"
 
 The app found these notes that are relevant to the request: ${noteTitles}
 
 Please write a short, friendly response summarizing this like:
-"Here are all your notes that pertain to [some brief summary of the query]."
+"Here are the notes that match your [intent-specific action] about [brief summary of query]."
+
+For create_note and request intents, use "I've created your note about [brief topic]" format.
 
 Keep the response under 100 characters.
 `;
@@ -116,7 +126,7 @@ Keep the response under 100 characters.
       { role: "system", content: systemPrompt },
       { role: "user", content: query },
     ],
-    max_tokens: 10,
+    max_tokens: 200,
   });
 
   return (
@@ -139,7 +149,7 @@ export async function generateTitle(content: string): Promise<string> {
           content: `Generate a short and relevant title for the following note: "${content}"`,
         },
       ],
-      max_tokens: 10, // Keep it short
+      max_tokens: 50,
     });
 
     return response.choices[0]?.message?.content?.trim() || "";
@@ -157,13 +167,35 @@ export async function generateContent(query: string): Promise<string> {
         {
           role: "system",
           content:
-            "You are a helpful assistant that generates 200 words or less for a request a user gives. They will want a note about the given topic. Could be a list or a paragraph or any suitable response.",
+            "You are a helpful assistant that generates well-formatted content for notes. " +
+            "When creating lists, always use proper formatting: " +
+            "- For unordered lists with categories: use bullet points (•) for categories " +
+            "- For items under categories: indent with a tab and prefix with a dash (-) " +
+            "- For simple unordered lists without categories: use bullet points (•) or dashes (-) " +
+            "- For ordered lists or steps: use numbers (1., 2., etc.) at the start of each line " +
+            "- For any list type: ensure each item is on its own line with proper indentation " +
+            "- When the user asks for steps or instructions, always use numbered lists " +
+            "- When the user asks for a list of items with categories, use bullet points for categories and dashes for items " +
+            "\n\nExample of properly formatted list with categories:\n" +
+            "• Fruits\n" +
+            "    - Apples\n" +
+            "    - Bananas\n" +
+            "    - Oranges\n" +
+            "• Vegetables\n" +
+            "    - Carrots\n" +
+            "    - Broccoli\n" +
+            "    - Spinach\n" +
+            "\n\nAlways follow this exact formatting pattern for categorized lists." +
+            "Preserve line breaks and paragraph structure in your response. " +
+            "For grocery lists, recipes, or step-by-step instructions, use clear formatting with items separated by line breaks. " +
+            "Generate 200 words or less for the user's request.",
         },
         {
           role: "user",
-          content: `Generate some content for the following request: "${query}"`,
+          content: `Generate well-formatted content for the following request: "${query}"`,
         },
       ],
+      max_tokens: 200,
     });
 
     return response.choices[0]?.message?.content?.trim() || "";
@@ -196,6 +228,48 @@ export const trimCommand = async (query: string): Promise<string> => {
 };
 
 /**
+ * Determines if a note is relevant to the user's query
+ * @param query The user's query
+ * @param note The note to check for relevance
+ * @returns Boolean indicating if the note is relevant
+ */
+export const isNoteRelevant = async (
+  query: string,
+  note: Note
+): Promise<boolean> => {
+  try {
+    const systemPrompt = `
+    You are an AI assistant determining if a note is relevant to a user's edit request.
+    The user has requested: "${query}"
+    
+    Analyze the following note and determine if it's relevant to this edit request.
+    Only respond with "relevant" or "not relevant" - no other text.
+    `;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Note title: "${note.title}"\nNote content: "${note.content}"`,
+        },
+      ],
+      max_tokens: 10,
+      temperature: 0.25,
+    });
+
+    const result = completion.choices[0]?.message?.content
+      ?.trim()
+      .toLowerCase();
+    return result === "relevant";
+  } catch (error) {
+    console.error("Error checking note relevance:", error);
+    return true; // Default to including the note if there's an error
+  }
+};
+
+/**
  * Edits notes based on the user's query. This function takes a collection of notes
  * and edits their content according to the instruction in the query.
  * @param query The user's query containing edit instructions
@@ -208,6 +282,17 @@ export const semanticEditNotes = async (
 ): Promise<Note[]> => {
   if (notes.length === 0) return [];
 
+  // Filter notes for relevance first
+  const relevantNotes: Note[] = [];
+  for (const note of notes) {
+    const isRelevant = await isNoteRelevant(query, note);
+    if (isRelevant) {
+      relevantNotes.push(note);
+    }
+  }
+
+  if (relevantNotes.length === 0) return [];
+
   const systemPrompt = `
   You are an AI assistant helping to edit notes in a note-taking app.
   The user has requested: "${query}"
@@ -216,13 +301,18 @@ export const semanticEditNotes = async (
   Make targeted changes that align with the user's intent, while preserving the overall structure and purpose of each note.
   Only make changes that are relevant to the user's request - don't modify unrelated content.
   
+  IMPORTANT: Preserve formatting in your response:
+  - Maintain line breaks between paragraphs
+  - For lists, ensure each item is on its own line with appropriate bullet points or numbers
+  - Preserve any existing indentation or special formatting
+  
   Return the edited content for each note. If a note doesn't need changes, return its original content unchanged. Also, don't add any quotations to the response.
   `;
 
-  // Create a deep copy of the notes array to avoid modifying the original
-  const editedNotes = JSON.parse(JSON.stringify(notes));
+  // Create a deep copy of the relevant notes array
+  const editedNotes = JSON.parse(JSON.stringify(relevantNotes));
 
-  for (let i = 0; i < notes.length; i++) {
+  for (let i = 0; i < relevantNotes.length; i++) {
     try {
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -230,7 +320,7 @@ export const semanticEditNotes = async (
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Original note content: "${notes[i].content}"
+            content: `Original note content: "${relevantNotes[i].content}"
             
             Please edit this note according to the user's request: "${query}"`,
           },
@@ -240,16 +330,71 @@ export const semanticEditNotes = async (
 
       const editedContent = completion.choices[0]?.message?.content?.trim();
 
-      if (editedContent && editedContent !== notes[i].content) {
+      if (editedContent && editedContent !== relevantNotes[i].content) {
         editedNotes[i] = {
-          ...notes[i],
+          ...relevantNotes[i],
           content: editedContent,
         };
       }
     } catch (error) {
-      console.error(`Error editing note ${notes[i].id}:`, error);
+      console.error(`Error editing note ${relevantNotes[i].id}:`, error);
     }
   }
 
   return editedNotes;
+};
+
+/**
+ * Checks if content is similar to existing notes
+ * @param contentOrQuery The content or query to check for similarity
+ * @param notes Array of existing notes
+ * @returns Array of similar notes
+ */
+export const findSimilarNotes = async (
+  contentOrQuery: string,
+  notes: Note[]
+): Promise<Note[]> => {
+  if (notes.length === 0) return [];
+
+  try {
+    const systemPrompt = `
+    You are an AI assistant determining if notes are similar to a user's input.
+    Analyze the following notes and determine if they contain similar information to what the user is trying to create.
+    For each note, respond with only "similar" or "not similar" - no other text.
+    Consider a note similar if it covers the same topic or contains substantially overlapping information with the input.
+    `;
+
+    const similarNotes: Note[] = [];
+
+    for (const note of notes) {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: `Input: "${contentOrQuery}"\nExisting note title: "${note.title}"\nExisting note content: "${note.content}"`,
+          },
+        ],
+        max_tokens: 10,
+        temperature: 0.25,
+      });
+
+      const result = completion.choices[0]?.message?.content
+        ?.trim()
+        .toLowerCase();
+
+      if (result === "similar") {
+        similarNotes.push(note);
+      }
+
+      // Limit to 3 similar notes to avoid overwhelming the user
+      if (similarNotes.length >= 3) break;
+    }
+
+    return similarNotes;
+  } catch (error) {
+    console.error("Error checking note similarity:", error);
+    return [];
+  }
 };

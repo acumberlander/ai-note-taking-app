@@ -58,6 +58,7 @@ export const _createUser = async (
  */
 export const _fetchUser = async (id: string): Promise<_User> => {
   const res = await axios.get(`${baseUrl}/api/users/${id}`);
+  console.log("_fetchUser: ", res.data);
   return res.data;
 };
 
@@ -76,20 +77,24 @@ export const _searchNotes = async (query: string): Promise<Note[]> => {
  * Search for notes by semantics.
  * @param query
  * @param user_id Optional user ID to filter notes by user
+ * @param sensitivity Optional sensitivity value (0.1-0.9, lower = more results)
  */
 export const _semanticQuery = async (
   query: string,
-  user_id?: string | null
+  user_id?: string | null,
+  sensitivity?: number
 ): Promise<{
   notes: Note[];
   editedNotes: Note[];
   message: string;
   intent: string;
-}> => {
+} | null> => {
   const res = await axios.post(`${baseUrl}/api/notes/semantic-query`, {
     query,
     user_id,
+    sensitivity,
   });
+
   return res.data;
 };
 

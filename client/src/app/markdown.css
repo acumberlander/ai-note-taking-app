@@ -1,0 +1,25 @@
+/* Create a new CSS file for markdown styling */
+.markdown-content {
+  white-space: pre-wrap;
+  /* font-size: 1.75em; */
+}
+
+.markdown-content ul {
+  padding-left: 1.5rem;
+  font-size: 2em;
+}
+
+.markdown-content ul li {
+  margin-bottom: 0.5rem;
+}
+
+/* Style for nested lists */
+.markdown-content ul ul {
+  margin-top: 0.5rem;
+  padding-left: 2rem;
+}
+
+/* Preserve indentation for list items */
+.markdown-content ul li ul li {
+  white-space: pre;
+}

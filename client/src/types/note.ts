@@ -5,6 +5,7 @@ export interface Note {
   title: string;
   content: string;
   contentHidden?: boolean;
+  isTemporary?: boolean;
 }
 
 export type NewNote = Omit<Note, "id">;
@@ -16,16 +17,21 @@ export type NoteStore = {
   deleteModalIsOpen: boolean;
   noteFormLoading: boolean;
   noteListLoading: boolean;
-  setNoteListLoading: (loadingState: boolean) => void;
-  setNoteFormLoading: (loadingState: boolean) => void;
   queryIntent: string;
   semanticDeleteModalIsOpen: boolean;
   semanticEditModalIsOpen: boolean;
+  semanticSensitivity: number;
   noteToDelete?: Note;
   queriedNotes: Note[];
   editedNotes: Note[];
+  lastQuery: string;
+  lastSensitivity: number;
+  isTemporary: boolean;
 
   // Functions
+  setSemanticSensitivity: (sensitivity: number) => void;
+  setNoteListLoading: (loadingState: boolean) => void;
+  setNoteFormLoading: (loadingState: boolean) => void;
   setIsLoading: (loadingState: boolean) => void;
   setQueryIntent: (intent: string) => void;
   /**
@@ -50,12 +56,14 @@ export type NoteStore = {
   setNotesToEdit: (notes: Note[]) => void;
   setEditedNotes: (notes: Note[]) => void;
   setNotesToDelete: (notes: Note[]) => void;
-  updateAiResponse: (value: string | undefined) => void;
+  updateAiResponse: (response: string) => void;
   fetchNotes: (user_id: string | null) => Promise<void>;
-  addNote: ({ title, content, user_id }: NewNote) => Promise<void>;
   deleteNote: (id: number) => Promise<void>;
   deleteNotes: (notes: Note[]) => Promise<void>;
   updateNotes: (notes: Note[]) => Promise<boolean>;
-  updateNote: (id: number, { title, content }: NewNote) => Promise<void>;
+  updateNote: (
+    id: number,
+    { title, content, user_id }: NewNote
+  ) => Promise<void>;
   semanticQuery: (query: string) => Promise<void>;
 };

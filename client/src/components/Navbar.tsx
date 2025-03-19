@@ -1,23 +1,28 @@
 "use client";
 
 import { useUserStore } from "@/store/useUserStore";
-import { signOut } from "@/lib/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import SignOutConfirmModal from "./SignOutConfirmModal";
 
 export default function Navbar() {
-  const { user } = useUserStore();
+  const { user, signOut } = useUserStore();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSignOutModalOpen, setIsSignOutModalOpen] = useState(false);
 
   const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push("/auth");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    await signOut();
+    router.push("/auth");
+  };
+
+  const openSignOutModal = () => {
+    setIsSignOutModalOpen(true);
+  };
+
+  const closeSignOutModal = () => {
+    setIsSignOutModalOpen(false);
   };
 
   return (
@@ -58,7 +63,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center space-x-6">
           {user && (
             <button
-              onClick={handleSignOut}
+              onClick={openSignOutModal}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
             >
               Sign Out
@@ -73,7 +78,7 @@ export default function Navbar() {
           {user && (
             <button
               onClick={() => {
-                handleSignOut();
+                openSignOutModal();
                 setIsMenuOpen(false);
               }}
               className="block w-full text-left px-3 py-2 text-gray-600 hover:text-blue-500 transition-colors"
@@ -83,6 +88,11 @@ export default function Navbar() {
           )}
         </div>
       )}
+      <SignOutConfirmModal
+        isOpen={isSignOutModalOpen}
+        onClose={closeSignOutModal}
+        onConfirm={handleSignOut}
+      />
     </nav>
   );
 }

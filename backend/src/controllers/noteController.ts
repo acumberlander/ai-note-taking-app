@@ -8,6 +8,7 @@ import {
   semanticEditNotes,
   generateTitle,
 } from "../services/aiService";
+import { createNote } from "../services/noteService";
 
 /**
  * Note controller that saves a note to the postgres database
@@ -20,16 +21,18 @@ export const createNoteController = async (
 ): Promise<void> => {
   const { title, content, user_id } = req.body;
 
-  if (!title || !content) {
-    res.status(400).json({ error: "Title and content are required" });
+  if (!content) {
+    res.status(400).json({ error: "Content is required" });
     return;
   }
 
   try {
-    const note = new Note(title, content, user_id);
-    console.log("note: ", note);
-    const savedNote = await note.save();
-    res.json(savedNote);
+    // Proceed directly with note creation
+    const savedNote = await createNote(content, user_id, title);
+    res.json({
+      note: savedNote,
+      message: "Note created successfully.",
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ error: "Error creating note" });
@@ -90,7 +93,7 @@ export const getNotesController = async (
 ): Promise<void> => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+    const limit = Number(req.query.limit) || 36;
     const id = req.params.id as string;
 
     if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
@@ -146,7 +149,7 @@ export const searchNotesController = async (
 
   if (!query || typeof query !== "string") {
     console.log("Invalid query - returning all notes");
-    const allNotes = await Note.findPaginated(1, 10, user_id);
+    const allNotes = await Note.findPaginated(1, 20, user_id);
     res.json(allNotes);
     return;
   }
@@ -165,33 +168,58 @@ export const semanticQueryController = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { query, user_id } = req.body;
+    const { query, user_id, sensitivity = 0.22 } = req.body;
     let notes: Note[] = [];
     let editedNotes: Note[] = [];
+    let content: string | undefined;
 
     if (!query || typeof query !== "string" || query.trim() === "") {
       notes = await Note.findPaginated(1, 20, user_id);
       res.json({
         notes,
+        editedNotes: [],
         message: "I didn't hear anything, so I returned all your notes.",
+        intent: "show_all",
       });
       return;
     }
 
+    // Get intent classification
     const intent = await classifyIntent(query);
+    console.log("Intent classification:", intent);
+
     if (intent === "show_all") {
+      // Return all user's notes when intent is show_all
       notes = await Note.findPaginated(1, 20, user_id);
     } else if (intent === "create_note") {
-      const trimmedQuery = await trimCommand(query);
-      await createNoteFromBackend(trimmedQuery, user_id);
-      notes = await Note.findPaginated(1, 20, user_id);
+      // Generate content for the potential note
+      content = await generateContent(query);
+      const title = await generateTitle(content);
+
+      // Create note immediately without similarity check
+      const newNote = await createNote(content, user_id, title);
+
+      // Make sure we're returning the newly created note
+      res.json({
+        notes: [newNote],
+        content,
+        similarNotes: [],
+        editedNotes: [],
+        intent,
+        message: "I've created your note about " + title,
+      });
+      return;
     } else if (intent === "request") {
       const newContent = await generateContent(query);
-      await createNoteFromBackend(newContent, user_id);
-      notes = await Note.findPaginated(1, 20, user_id);
+      const newNote = await createNote(newContent, user_id);
+
+      // Just use the returned note directly - don't fetch it again
+      if (newNote && newNote.id) {
+        notes = [newNote];
+      }
     } else if (intent === "delete_all") {
       // Get all user's notes for deletion
-      notes = await Note.findPaginated(1, 100, user_id); // Fetch up to 100 notes
+      notes = await Note.findPaginated(1, 20, user_id);
     } else if (
       intent === "delete_notes" ||
       intent === "search" ||
@@ -202,11 +230,27 @@ export const semanticQueryController = async (
         intent === "delete_notes" || intent === "edit_notes"
           ? await trimCommand(query)
           : query;
-      notes = await Note.searchByEmbedding(searchQuery, user_id);
+      notes = await Note.searchByEmbedding(
+        searchQuery,
+        user_id,
+        parseFloat(sensitivity)
+      );
+
       if (intent === "edit_notes") {
         editedNotes = await semanticEditNotes(query, notes);
+
+        if (editedNotes.length > 0) {
+          // Filter notes to only include those that were edited
+          const editedIds = editedNotes.map((note) => note.id);
+          notes = notes.filter((note) => editedIds.includes(note.id));
+
+          console.log("Edited notes:", editedNotes);
+        } else {
+          console.log("No notes were edited");
+        }
       }
     }
+
     const summaryMessage = await generateQueryResponse(query, intent, notes);
 
     res.json({
@@ -294,9 +338,7 @@ export const deleteNotesController = async (
   const { noteIds, user_id } = req.body;
 
   if (!Array.isArray(noteIds) || noteIds.length === 0) {
-    res
-      .status(400)
-      .json({ error: "Invalid note IDs: must be a non-empty array" });
+    res.json({ message: "No notes to delete" });
     return;
   }
 
@@ -345,39 +387,24 @@ export const updateNotesController = async (
     return;
   }
 
-  if (user_id) {
-    for (const note of notes) {
-      if (!note.id) continue;
+  // Validate notes have required fields
+  const validNotes = notes.filter(
+    (note) => note.id && note.title && note.content
+  );
 
-      const existingNote = await Note.findById(note.id);
-      if (!existingNote) {
-        res.status(403).json({
-          error:
-            "You do not have permission to update one or more of these notes",
-        });
-        return;
-      }
-    }
+  if (validNotes.length === 0) {
+    res.status(400).json({ error: "No valid notes to update" });
+    return;
   }
 
   try {
-    const updatedNotes = [];
+    // Convert to Note objects
+    const noteObjects = validNotes.map(
+      (note) => new Note(note.title, note.content, user_id, note.id)
+    );
 
-    for (const note of notes) {
-      if (!note.id || !note.title || !note.content) {
-        continue;
-      }
-
-      const updatedNote = await Note.updateNoteById(
-        note.id,
-        note.title,
-        note.content
-      );
-
-      if (updatedNote) {
-        updatedNotes.push(updatedNote);
-      }
-    }
+    // Use batch update
+    const updatedNotes = await Note.batchUpdateNotes(noteObjects);
 
     if (updatedNotes.length > 0) {
       res.status(200).json({

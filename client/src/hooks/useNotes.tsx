@@ -1,19 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { useUserStore } from "@/store/useUserStore";
+import { testNoteGroups } from "@/constants";
+import { _createNote } from "@/app/api/postgresRequests";
 
 const useNotes = () => {
   const [query, setQuery] = useState("");
-  const { allNotes, fetchNotes } = useNoteStore();
+  const { allNotes, fetchNotes, setNoteListLoading } = useNoteStore();
   const { user } = useUserStore();
   const [filteredNotes, setFilteredNotes] = useState(allNotes);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (user) {
-      const { id } = user;
-      fetchNotes(id);
+    if (user && !fetchedRef.current) {
+      fetchedRef.current = true;
+      fetchNotes(user.id);
     }
-  }, [fetchNotes]);
+  }, [user]);
 
   useEffect(() => {
     if (query.trim() === "") {
@@ -29,10 +32,39 @@ const useNotes = () => {
     }
   }, [query, allNotes]);
 
+  const createTestNotes = async () => {
+    if (!user) return;
+
+    setNoteListLoading(true);
+
+    try {
+      // Create notes directly in the database
+      const createdNotes = await Promise.all(
+        testNoteGroups.map(async (noteData) => {
+          const dbNote = await _createNote({
+            title: noteData.title,
+            content: noteData.content,
+            user_id: user.id,
+          });
+
+          return dbNote;
+        })
+      );
+
+      // Fetch all notes to ensure state is consistent
+      await fetchNotes(user.id);
+    } catch (error) {
+      console.error("Error creating test notes:", error);
+      setNoteListLoading(false);
+    }
+  };
+
   return {
     query,
     setQuery,
     filteredNotes,
+    fetchNotes,
+    createTestNotes,
   };
 };
 

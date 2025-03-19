@@ -14,6 +14,7 @@ export type UserStore = {
   user: _User | null;
   loading: boolean;
   setUser: (user: _User | null) => void;
+  signOut: () => Promise<void>;
   setLoading: (isLoading: boolean) => void;
   createUser: (id: string, is_anonymous: boolean) => Promise<void>;
 };

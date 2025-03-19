@@ -2,6 +2,7 @@ import { ChangeEvent, useState, useEffect } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
 import { useUserStore } from "@/store/useUserStore";
+import { _createNote } from "@/app/api/postgresRequests";
 
 interface UseFormProps {
   setQuery: (query: string) => void;
@@ -13,13 +14,8 @@ export const useForm = ({ setQuery }: UseFormProps) => {
   const [filter, setFilter] = useState("");
   const [isFilter, setIsFilter] = useState(false);
 
-  const {
-    addNote,
-    fetchNotes,
-    updateAiResponse,
-    noteFormLoading,
-    setNoteFormLoading,
-  } = useNoteStore();
+  const { fetchNotes, updateAiResponse, noteFormLoading, setNoteFormLoading } =
+    useNoteStore();
   const { user } = useUserStore();
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -37,9 +33,8 @@ export const useForm = ({ setQuery }: UseFormProps) => {
     e.preventDefault();
     if (!title || !content) return;
     setNoteFormLoading(true);
-    await addNote({ title, content, user_id: user?.id || null });
+    await _createNote({ title, content, user_id: user?.id || null });
     setNoteFormLoading(false);
-    clearInputs();
     await refreshNotes();
   };
 

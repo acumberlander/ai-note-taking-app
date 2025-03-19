@@ -55,11 +55,11 @@ export const fetchUserController = async (
     const user = await User.fetchUserById(id);
 
     if (!user) {
-      // res.status(404).json({ error: "No user with that id..." });
       res.json({
         message: "There are no users with that id...",
         data: null,
       });
+      return;
     }
 
     res.json(user);

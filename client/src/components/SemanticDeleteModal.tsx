@@ -6,11 +6,9 @@ import {
   Checkbox,
   Typography,
   DialogBody,
-  IconButton,
   DialogHeader,
   DialogFooter,
 } from "@material-tailwind/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useNoteStore } from "@/store/useNoteStore";
 import { Note } from "@/types/note";
 
@@ -172,7 +170,7 @@ export default function SemanticDeleteModal() {
                       <Typography
                         variant="paragraph"
                         color="gray"
-                        className="text-xl"
+                        className="text-[1.75em] markdown-content"
                       >
                         {note.content}
                       </Typography>
@@ -185,7 +183,7 @@ export default function SemanticDeleteModal() {
         </DialogBody>
         <DialogFooter className="flex justify-end space-x-4 p-6">
           <Button
-            className="cursor-pointer p-4 text-xl"
+            className="text-lg font-medium px-5 py-2.5 cursor-pointer"
             variant="outlined"
             color="gray"
             onClick={() => handleModalState(false)}
@@ -194,7 +192,7 @@ export default function SemanticDeleteModal() {
             Cancel
           </Button>
           <Button
-            className="cursor-pointer p-4 text-xl"
+            className="text-lg font-medium px-5 py-2.5 cursor-pointer text-white"
             variant="filled"
             color="red"
             onClick={handleDelete}

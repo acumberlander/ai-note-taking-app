@@ -84,11 +84,19 @@ export class Note {
 
   /**
    * Semantic search using OpenAI embeddings (for voice search functionality).
+   * @param query The search query
+   * @param user_id The user ID
+   * @param sensitivity Optional sensitivity value (0.1-0.9, lower = more results)
+   * @returns Array of matching notes
    */
   static async searchByEmbedding(
     query: string,
-    user_id?: string
+    user_id: string,
+    sensitivity: number = 0.24
   ): Promise<Note[]> {
+    // Validate sensitivity is within reasonable bounds
+    sensitivity = Math.max(0.1, Math.min(0.9, sensitivity));
+
     const embeddingResponse = await openai.embeddings.create({
       model: "text-embedding-ada-002",
       input: query,
@@ -100,18 +108,12 @@ export class Note {
     let sqlQuery = `
       SELECT *, (embedding <=> $1::vector) AS similarity
       FROM notes
-      WHERE (embedding <=> $1::vector) < $2`;
-
-    const params = [formattedEmbedding, 0.24015];
-
-    if (user_id) {
-      sqlQuery += ` AND "user_id" = $3`;
-      params.push(user_id);
-    }
-
-    sqlQuery += ` ORDER BY similarity ASC
-      LIMIT 10`;
-
+      WHERE (embedding <=> $1::vector) < $2 
+      AND "user_id" = $3
+      ORDER BY similarity ASC
+      LIMIT 36
+      `;
+    const params = [formattedEmbedding, sensitivity, user_id];
     const result = await pool.query(sqlQuery, params);
 
     return result.rows.map(
@@ -131,8 +133,8 @@ export class Note {
    * Fetch paginated list of notes.
    */
   static async findPaginated(
-    page: number,
-    limit: number,
+    page: number = 1,
+    limit: number = 36,
     user_id?: string
   ): Promise<Note[]> {
     const offset = (page - 1) * limit;
@@ -272,5 +274,47 @@ export class Note {
     ]);
 
     return result.rowCount;
+  }
+
+  /**
+   * Batch update multiple notes at once
+   */
+  static async batchUpdateNotes(notes: Note[]): Promise<Note[]> {
+    if (notes.length === 0) return [];
+
+    const updatedNotes: Note[] = [];
+
+    // Process notes in parallel using Promise.all
+    await Promise.all(
+      notes.map(async (note) => {
+        if (!note.id) return; // Skip notes without ID
+
+        const noteText = `${note.title} ${note.content}`;
+        const embedding = await generateEmbedding(noteText);
+        const formattedEmbedding = JSON.stringify(embedding);
+
+        const result = await pool.query(
+          `UPDATE notes 
+           SET title = $1, content = $2, embedding = $3::vector
+           WHERE id = $4
+           RETURNING *`,
+          [note.title, note.content, formattedEmbedding, note.id]
+        );
+
+        if (result.rows.length > 0) {
+          updatedNotes.push(
+            new Note(
+              result.rows[0].title,
+              result.rows[0].content,
+              result.rows[0].user_id,
+              result.rows[0].id,
+              result.rows[0].embedding
+            )
+          );
+        }
+      })
+    );
+
+    return updatedNotes;
   }
 }

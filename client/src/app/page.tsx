@@ -18,12 +18,12 @@ import { useForm } from "@/hooks/useForm";
 export default function Home() {
   // Initialize Supabase auth with Zustand store
   useSupabaseAuth();
-  
+
   // Get user state from Zustand store
   const { user, loading } = useUserStore();
   const router = useRouter();
   const { noteListLoading } = useNoteStore();
-  const { query, setQuery, filteredNotes } = useNotes();
+  const { query, setQuery, filteredNotes, createTestNotes } = useNotes();
   const { refreshNotes } = useForm({ setQuery });
 
   // Redirect unauthenticated users to /auth
@@ -52,7 +52,11 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <NoteList notes={filteredNotes} query={query} />
+          <NoteList
+            notes={filteredNotes}
+            query={query}
+            createTestNotes={createTestNotes}
+          />
           <DeleteModal />
           <SemanticDeleteModal />
           <SemanticEditModal refreshNotes={refreshNotes} />

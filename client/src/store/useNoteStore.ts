@@ -9,9 +9,12 @@ import {
   _updateNote,
   _updateNotes,
 } from "@/app/api/postgresRequests";
-import { Note, NoteStore } from "@/types/note";
+import { NewNote, Note, NoteStore } from "@/types/note";
 import { _User } from "@/types/_user";
 import { useUserStore } from "./useUserStore";
+import { aiLoadingResponses } from "@/constants";
+import { testNoteGroups } from "@/constants";
+import { getActionVerb } from "@/utils/utils";
 
 export const useNoteStore = create<NoteStore>()(
   devtools((set) => ({
@@ -26,6 +29,11 @@ export const useNoteStore = create<NoteStore>()(
     semanticDeleteModalIsOpen: false,
     semanticEditModalIsOpen: false,
     noteToDelete: undefined,
+    semanticSensitivity: 0.24,
+    lastQuery: "",
+    lastSensitivity: 0.24,
+    potentialDuplicateNote: null,
+    duplicateNoteModalIsOpen: false,
 
     // State functions
     setQueriedNotes: (notes: Note[] | undefined) => {
@@ -78,17 +86,13 @@ export const useNoteStore = create<NoteStore>()(
         aiResponse: value,
       }));
     },
+    setSemanticSensitivity: (sensitivity: number) =>
+      set({ semanticSensitivity: sensitivity }),
     fetchNotes: async (user_id: string | null) => {
       set({ noteListLoading: true });
       const data = await _fetchAllNotes(user_id || "");
 
       set({ allNotes: [...data], noteListLoading: false });
-    },
-    addNote: async ({ title, content, user_id }) => {
-      const note = await _createNote({ title, content, user_id });
-      set((state) => ({
-        allNotes: [...state.allNotes, note],
-      }));
     },
     deleteNote: async (id) => {
       const deleteSuccessful = await _deleteNoteById(id);
@@ -142,33 +146,78 @@ export const useNoteStore = create<NoteStore>()(
     },
     semanticQuery: async (query) => {
       const { user } = useUserStore.getState();
+      const { semanticSensitivity, lastQuery, lastSensitivity } =
+        useNoteStore.getState();
       const user_id = user?.id || null;
-      const result = await _semanticQuery(query, user_id);
-      if (
-        (result.intent === "delete_notes" || result.intent === "delete_all") &&
-        result.notes.length > 0
-      ) {
+
+      // Check if this is a repeated query with same sensitivity
+      const isRepeatedQuery =
+        query === lastQuery && semanticSensitivity === lastSensitivity;
+
+      try {
+        // Only make API call if query is new or sensitivity changed
+        let result;
+        if (!isRepeatedQuery) {
+          set({
+            aiResponse: aiLoadingResponses[Math.floor(Math.random() * 5)],
+            noteListLoading: true,
+            lastQuery: query,
+            lastSensitivity: semanticSensitivity,
+          });
+          result = await _semanticQuery(query, user_id, semanticSensitivity);
+
+          if (result) {
+            // Update state with the returned notes and intent
+            set({
+              allNotes:
+                result.intent === "create_note"
+                  ? [...useNoteStore.getState().allNotes, ...result.notes]
+                  : result.notes,
+              aiResponse: result.message,
+              queryIntent: result.intent,
+              noteListLoading: false,
+              queriedNotes: result.notes || [],
+              editedNotes: result.editedNotes || [],
+            });
+
+            // Handle specific intents
+            if (
+              result.intent === "edit_notes" &&
+              result.editedNotes &&
+              result.editedNotes.length > 0
+            ) {
+              // Open the semantic edit modal
+              set({ semanticEditModalIsOpen: true });
+            } else if (
+              result.intent === "delete_notes" ||
+              result.intent === "delete_all"
+            ) {
+              // Open the semantic delete modal
+              set({ semanticDeleteModalIsOpen: true });
+            }
+          }
+        } else {
+          // Use existing state for repeated queries
+          const state = useNoteStore.getState();
+          result = {
+            notes: state.allNotes,
+            editedNotes: state.editedNotes,
+            message: `I've already ${getActionVerb(
+              state.queryIntent
+            )} based on "${query}". Maybe change the sensitivity?`,
+            intent: state.queryIntent,
+          };
+
+          set({
+            aiResponse: result.message,
+            noteListLoading: false,
+          });
+        }
+      } catch (error) {
+        console.error("Error in semantic query:", error);
         set({
-          allNotes: result.notes,
-          aiResponse: result.message,
-          queryIntent: result.intent,
-          queriedNotes: result.notes,
-          semanticDeleteModalIsOpen: true,
-        });
-      } else if (result.intent === "edit_notes") {
-        set({
-          allNotes: result.notes,
-          aiResponse: result.message,
-          queryIntent: result.intent,
-          queriedNotes: result.notes,
-          editedNotes: result.editedNotes,
-          semanticEditModalIsOpen: true,
-        });
-      } else {
-        set({
-          allNotes: result.notes,
-          aiResponse: result.message,
-          queryIntent: result.intent,
+          aiResponse: "Sorry, I encountered an error processing your request.",
+          noteListLoading: false,
         });
       }
     },
