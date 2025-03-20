@@ -15,16 +15,6 @@ export default function NoteTranscription() {
     handleStopRecording,
   } = useNoteTranscription();
 
-  const [isSupported, setIsSupported] = useState(true);
-
-  useEffect(() => {
-    // Check if MediaRecorder is supported
-    setIsSupported(
-      typeof window !== "undefined" &&
-        (!!window.MediaRecorder || !!require("audio-recorder-polyfill"))
-    );
-  }, []);
-
   // Toggle recording function
   const toggleRecording = () => {
     if (isRecording) {
@@ -33,17 +23,6 @@ export default function NoteTranscription() {
       handleStartRecording();
     }
   };
-
-  if (!isSupported) {
-    return (
-      <div className="mt-4 p-4 bg-white shadow-md rounded-lg">
-        <p className="text-red-500">
-          Your browser doesn't support audio recording. Please use a modern
-          browser.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="mt-4 p-4 bg-white shadow-md rounded-lg">
