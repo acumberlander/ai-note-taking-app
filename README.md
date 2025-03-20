@@ -2,6 +2,10 @@
 
 WhisprNotes is an AI-powered note-taking application with advanced features like semantic search, speech-to-text transcription, and AI-assisted note management.
 
+## Demo
+
+Try the live demo: [https://whisprnotes.vercel.app/](https://whisprnotes.vercel.app/)
+
 ## Features
 
 ### Traditional Note Management
