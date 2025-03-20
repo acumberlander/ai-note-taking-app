@@ -94,13 +94,24 @@ export const useNoteStore = create<NoteStore>()(
 
       set({ allNotes: [...data], noteListLoading: false });
     },
-    deleteNote: async (id) => {
-      const deleteSuccessful = await _deleteNoteById(id);
-      if (deleteSuccessful) {
-        set((state) => ({
-          allNotes: state.allNotes.filter((note) => note.id !== id),
-          deleteModalIsOpen: false,
-        }));
+    deleteNote: async (noteId) => {
+      console.log(noteId);
+      try {
+        const deleteSuccessful = await _deleteNoteById(noteId);
+
+        if (deleteSuccessful) {
+          // Update the notes list
+          set((state) => ({
+            allNotes: state.allNotes.filter((note) => note.id !== noteId),
+          }));
+          return true;
+        } else {
+          console.error("Delete operation failed");
+          return false;
+        }
+      } catch (error) {
+        console.error("Error in deleteNote:", error);
+        return false;
       }
     },
     deleteNotes: async (notes: Note[]) => {

@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import fs from "fs";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
 import { OpenAI } from "openai";
+import os from "os";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,26 +16,21 @@ export const transcribeAudioFile = async (
     return;
   }
 
-  if (!req.file.path || typeof req.file.path !== "string") {
-    res.status(400).json({ error: "Invalid file path." });
-    return;
-  }
-
   const validMimeTypes = ["audio/wav", "audio/mpeg", "audio/mp4", "audio/webm"];
   if (!validMimeTypes.includes(req.file.mimetype)) {
     res.status(400).json({ error: "Invalid audio format" });
     return;
   }
 
-  const fileExtension = req.file.mimetype.split("/")[1];
-  const originalPath = req.file.path;
-  const newFilePath = `${originalPath}.${fileExtension}`;
-
-  fs.renameSync(originalPath, newFilePath);
+  // Create a temporary file in the OS temp directory
+  const tempFilePath = path.join(os.tmpdir(), `${uuidv4()}.wav`);
 
   try {
-    const fileStream = fs.createReadStream(newFilePath);
-    fileStream.path = newFilePath;
+    // Write the buffer to a temporary file
+    fs.writeFileSync(tempFilePath, req.file.buffer);
+
+    const fileStream = fs.createReadStream(tempFilePath);
+    fileStream.path = tempFilePath;
 
     const transcription = await openai.audio.transcriptions.create({
       file: fileStream,
@@ -40,7 +38,8 @@ export const transcribeAudioFile = async (
       language: "en",
     });
 
-    fs.unlinkSync(newFilePath);
+    // Delete the temporary file immediately
+    fs.unlinkSync(tempFilePath);
 
     const transcriptionText = transcription.text?.trim().toLowerCase();
 
@@ -51,6 +50,11 @@ export const transcribeAudioFile = async (
       res.json({ text: transcription.text });
     }
   } catch (error: any) {
+    // Ensure temporary file is deleted even if transcription fails
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+
     console.error("Transcription Error:", error);
     res.status(500).json({
       error: "Transcription failed. Please try again.",

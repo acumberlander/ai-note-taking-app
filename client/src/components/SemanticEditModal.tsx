@@ -70,6 +70,14 @@ const SemanticEditModal = ({ refreshNotes }) => {
     );
   };
 
+  const handleTitleChange = (id: number, newTitle: string) => {
+    setEditedNotes(
+      editedNotes.map((note) =>
+        note.id === id ? { ...note, title: newTitle } : note
+      )
+    );
+  };
+
   const handleCancelChanges = async () => {
     handleModalState(false);
     await refreshNotes();
@@ -157,7 +165,15 @@ const SemanticEditModal = ({ refreshNotes }) => {
                     {/* Edited note */}
                     <div className="flex-1">
                       <h3 className="font-medium text-lg text-gray-600 mb-3">
-                        {`${editedNote?.title} (Edited)`}
+                        <input
+                          type="text"
+                          value={editedNote?.title}
+                          onChange={(e) =>
+                            handleTitleChange(editedNote.id, e.target.value)
+                          }
+                          className="w-full p-1 border rounded bg-blue-50 focus:ring-2 focus:ring-blue-300"
+                          style={{ fontSize: "1em" }}
+                        />
                       </h3>
                       <div
                         className="mt-2 p-2 border rounded bg-blue-50 markdown-content"
@@ -166,12 +182,14 @@ const SemanticEditModal = ({ refreshNotes }) => {
                           wordBreak: "break-word",
                         }}
                       >
-                        <Typography
+                        <Textarea
+                          value={editedNote.content}
+                          onChange={(e) =>
+                            handleNoteChange(editedNote.id, e.target.value)
+                          }
+                          className="w-full bg-blue-50 border-none focus:ring-2 focus:ring-blue-300"
                           style={{ fontSize: "1.75em", lineHeight: "normal" }}
-                          className="markdown-content"
-                        >
-                          {editedNote.content}
-                        </Typography>
+                        />
                       </div>
                     </div>
                   </div>

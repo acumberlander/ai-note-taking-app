@@ -41,8 +41,13 @@ export default function Note({ note, onViewNote }: NoteProps) {
 
   const handleDeleteNote = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setDeleteModalState(true);
+    // Reset any previous delete state first
+    setNoteToDelete(undefined);
+    setDeleteModalState(false);
+
+    // Then set the new note to delete and open the modal
     setNoteToDelete(note);
+    setDeleteModalState(true);
   };
 
   const handleEditClick = (e: React.MouseEvent) => {

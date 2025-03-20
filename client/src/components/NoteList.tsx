@@ -103,7 +103,7 @@ export default function NoteList({
       {/* Note View Modal */}
       <NoteViewModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        handleClose={handleCloseModal}
         currentNote={notes[currentNoteIndex]}
         onNavigate={handleNavigate}
       />

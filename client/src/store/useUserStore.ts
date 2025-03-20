@@ -5,6 +5,7 @@ import { _User, UserStore } from "@/types/_user";
 import { signOut } from "@/lib/auth";
 import { _createUser } from "@/app/api/postgresRequests";
 import { _deleteNotes, _fetchAllNotes } from "@/app/api/postgresRequests";
+import { useNoteStore } from "./useNoteStore";
 
 export const useUserStore = create<UserStore>()(
   devtools((set, get) => ({
@@ -21,6 +22,10 @@ export const useUserStore = create<UserStore>()(
       }
       await signOut();
       localStorage.removeItem("guestUserId");
+
+      // Clear AI response state in the note store
+      useNoteStore.getState().updateAiResponse("");
+
       set({ user: null });
     },
     setLoading: (isLoading: boolean) => {

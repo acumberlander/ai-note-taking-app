@@ -188,8 +188,8 @@ export const semanticQueryController = async (
     const intent = await classifyIntent(query);
     console.log("Intent classification:", intent);
 
+    // Handle different intents
     if (intent === "show_all") {
-      // Return all user's notes when intent is show_all
       notes = await Note.findPaginated(1, 20, user_id);
     } else if (intent === "create_note") {
       // Generate content for the potential note
@@ -235,6 +235,19 @@ export const semanticQueryController = async (
         user_id,
         parseFloat(sensitivity)
       );
+
+      // If no notes found for search/delete/edit, generate a "not found" message
+      if (notes.length === 0) {
+        const summaryMessage = await generateQueryResponse(query, intent, []);
+
+        res.json({
+          notes: [],
+          editedNotes: [],
+          intent,
+          message: summaryMessage,
+        });
+        return;
+      }
 
       if (intent === "edit_notes") {
         editedNotes = await semanticEditNotes(query, notes);

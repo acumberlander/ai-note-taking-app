@@ -6,6 +6,7 @@ import { faMicrophone } from "@fortawesome/free-solid-svg-icons";
 import { useSpeechToText } from "@/app/api/useSpeechToText";
 import { FourSquare } from "react-loading-indicators";
 import { useForm } from "@/hooks/useForm";
+import { useEffect } from "react";
 
 type NoteFormProps = {
   setQuery: (query: string) => void;
@@ -17,7 +18,6 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
     filter,
     content,
     isFilter,
-    isRecording,
     noteFormLoading,
     setTitle,
     setContent,
@@ -27,7 +27,33 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
     handleSearchChange,
   } = useForm({ setQuery });
 
-  const { startRecording, stopRecording } = useSpeechToText();
+  // Get the complete speech-to-text hook functionality
+  const {
+    startRecording,
+    stopRecording,
+    isRecording: micIsRecording,
+    isTranscribing,
+    text,
+  } = useSpeechToText();
+
+  // Check if form is valid (both title and content have values)
+  const isFormValid = title.trim() !== "" && content.trim() !== "";
+
+  // Handle recording toggle
+  const toggleRecording = () => {
+    if (micIsRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  // Update content when speech recognition completes
+  useEffect(() => {
+    if (text && !micIsRecording && !isTranscribing) {
+      setContent(text);
+    }
+  }, [text, micIsRecording, isTranscribing, setContent]);
 
   return (
     <div>
@@ -96,16 +122,22 @@ export default function NoteForm({ setQuery }: NoteFormProps) {
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded"
+              className={`w-full p-2 rounded ${
+                isFormValid
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-300 text-gray-500"
+              }`}
+              disabled={!isFormValid || noteFormLoading || isTranscribing}
             >
               Add Note
             </button>
             <button
               type="button"
-              onClick={isRecording ? stopRecording : startRecording}
+              onClick={toggleRecording}
               className={`p-3 rounded-full ${
-                isRecording ? "bg-red-500" : "bg-gray-300"
+                micIsRecording ? "bg-red-500" : "bg-gray-300"
               } text-white`}
+              disabled={isTranscribing || noteFormLoading}
             >
               <FontAwesomeIcon
                 icon={faMicrophone}

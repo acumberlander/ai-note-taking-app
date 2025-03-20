@@ -22,21 +22,22 @@ import { FourSquare } from "react-loading-indicators";
 
 interface NoteViewModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  handleClose: () => void;
   currentNote: NoteType | null;
   onNavigate: (direction: "prev" | "next") => void;
 }
 
 export default function NoteViewModal({
   isOpen,
-  onClose,
+  handleClose,
   currentNote,
   onNavigate,
 }: NoteViewModalProps) {
   const { setNoteToDelete, setDeleteModalState, updateNote, deleteNote } =
     useNoteStore();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // Only for animation
+  const [confirmingDelete, setConfirmingDelete] = useState(false); // For confirmation UI
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [showDeleteMessage, setShowDeleteMessage] = useState(false);
@@ -51,9 +52,7 @@ export default function NoteViewModal({
   }, [currentNote]);
 
   const handleDeleteNote = () => {
-    if (currentNote) {
-      setIsDeleting(true);
-    }
+    setConfirmingDelete(true);
   };
 
   const handleEditNote = () => {
@@ -78,35 +77,49 @@ export default function NoteViewModal({
   };
 
   const handleConfirmDelete = async () => {
-    if (currentNote) {
-      setDeletedNoteTitle(currentNote.title);
-      await deleteNote(currentNote.id);
-      setIsDeleting(false);
-      setShowDeleteMessage(true);
+    if (!currentNote) return;
 
-      // Show delete message for 2 seconds then navigate to next note or close modal
-      setTimeout(() => {
-        setShowDeleteMessage(false);
+    setIsDeleting(true); // Start animation
+    setConfirmingDelete(false); // Hide confirmation UI
+    setDeletedNoteTitle(currentNote.title);
 
-        // Check if there are any notes left to navigate to
-        const { allNotes } = useNoteStore.getState();
-        if (allNotes.length === 0) {
-          // No notes left, close the modal
-          onClose();
-          // Refresh notes to ensure UI is up to date
-          const { fetchNotes } = useNoteStore.getState();
-          const { user } = useUserStore.getState();
-          fetchNotes(user?.id || null);
-        } else {
-          // Navigate to next note if available
-          onNavigate("next");
-        }
-      }, 2000);
+    try {
+      const noteId = currentNote.id;
+      const success = await deleteNote(noteId);
+
+      if (success) {
+        setShowDeleteMessage(true);
+
+        // Show delete message for 2 seconds then navigate to next note or close modal
+        setTimeout(() => {
+          setShowDeleteMessage(false);
+
+          // Check if there are any notes left to navigate to
+          const { allNotes } = useNoteStore.getState();
+          if (allNotes.length === 0) {
+            // No notes left, close the modal
+            handleClose();
+            // Refresh notes to ensure UI is up to date
+            const { fetchNotes } = useNoteStore.getState();
+            const { user } = useUserStore.getState();
+            fetchNotes(user?.id || null);
+          } else {
+            // Navigate to next note if available
+            onNavigate("next");
+          }
+        }, 2000);
+      } else {
+        console.error("Delete operation returned false");
+      }
+    } catch (error) {
+      console.error("Error deleting note:", error);
+    } finally {
+      setIsDeleting(false); // Stop animation
     }
   };
 
   const handleCancelDelete = () => {
-    setIsDeleting(false);
+    setConfirmingDelete(false);
   };
 
   if (!currentNote) return null;
@@ -115,7 +128,7 @@ export default function NoteViewModal({
     <Dialog
       size="xl"
       open={isOpen}
-      handler={onClose}
+      handler={handleClose}
       className="fixed inset-0 flex items-center justify-center text-center bg-black/50"
     >
       <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl px-8 py-8 relative">
@@ -126,6 +139,18 @@ export default function NoteViewModal({
               color="#249fe4"
               size="large"
               text="Saving..."
+              textColor=""
+            />
+          </div>
+        )}
+
+        {/* Deleting Animation Overlay */}
+        {isDeleting && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10 rounded-lg">
+            <FourSquare
+              color="#f44336"
+              size="large"
+              text="Deleting..."
               textColor=""
             />
           </div>
@@ -149,7 +174,7 @@ export default function NoteViewModal({
           <IconButton
             variant="text"
             color="red"
-            onClick={onClose}
+            onClick={handleClose}
             className="hover:bg-red-50 flex items-center justify-center"
           >
             <XMarkIcon className="h-8 w-8" />
@@ -163,7 +188,7 @@ export default function NoteViewModal({
                 Your note "{deletedNoteTitle}" was deleted
               </Typography>
             </div>
-          ) : isDeleting ? (
+          ) : confirmingDelete ? (
             <div className="space-y-4">
               <Typography variant="h4" color="red">
                 Are you sure you want to delete this note?
@@ -216,7 +241,7 @@ export default function NoteViewModal({
           )}
         </DialogBody>
 
-        {!isDeleting && !showDeleteMessage && (
+        {!confirmingDelete && !showDeleteMessage && (
           <div className="flex justify-between mt-4">
             <IconButton
               variant="filled"

@@ -25,6 +25,7 @@ export type NoteStore = {
   queriedNotes: Note[];
   editedNotes: Note[];
   lastQuery: string;
+  lastIntent: string | null;
   lastSensitivity: number;
   isTemporary: boolean;
 

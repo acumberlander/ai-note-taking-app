@@ -101,21 +101,24 @@ The user asked: "${query}"
 The detected intent is: "${intent}"
 
 You will give a response in reference to what the user asked.
-Based on the intent:
-- For "show_all": Mention you're showing all their notes
-- For "search": Mention you found notes matching their search
-- For "create_note": Confirm the note was created with a message like "I've created your note about [brief topic]"
-- For "delete_notes": Confirm which notes were found for deletion
-- For "delete_all": Confirm all notes are ready for deletion
-- For "edit_notes": Say something like "Here are the notes you want to edit."
-- For "request": Confirm you created content based on their request with a message like "I've created a note with [brief description]"
+${
+  notes.length === 0
+    ? `No notes were found matching the user's query. Respond with a message like:
+  "Sorry, I couldn't find any notes related to [brief topic]. Try adjusting the sensitivity to see more results."`
+    : `Based on the intent:
+  - For "show_all": Mention you're showing all their notes
+  - For "search": Mention you found notes matching their search
+  - For "create_note": Confirm the note was created with a message like "I've created your note about [brief topic]"
+  - For "delete_notes": Confirm which notes were found for deletion
+  - For "delete_all": Confirm all notes are ready for deletion
+  - For "edit_notes": Say something like "Here are the notes you want to edit."
+  - For "request": Confirm you created content based on their request with a message like "I've created a note with [brief description]"
 
-The app found these notes that are relevant to the request: ${noteTitles}
+  The app found these notes that are relevant to the request: ${noteTitles}
 
-Please write a short, friendly response summarizing this like:
-"Here are the notes that match your [intent-specific action] about [brief summary of query]."
-
-For create_note and request intents, use "I've created your note about [brief topic]" format.
+  Please write a short, friendly response summarizing this like:
+  "Here are the notes that match your [intent-specific action] about [brief summary of query]."`
+}
 
 Keep the response under 100 characters.
 `;
@@ -130,7 +133,10 @@ Keep the response under 100 characters.
   });
 
   return (
-    completion.choices[0]?.message?.content?.trim() || "Here are your notes."
+    completion.choices[0]?.message?.content?.trim() ||
+    (notes.length === 0
+      ? "Sorry, I couldn't find any notes matching your query. Try adjusting the sensitivity."
+      : "Here are your notes.")
   );
 }
 
@@ -142,11 +148,13 @@ export async function generateTitle(content: string): Promise<string> {
         {
           role: "system",
           content: `You are a helpful assistant that generates short, concise titles for given text.
-            You do not put quotation around the title.`,
+            You do not put quotation around the title.
+            DO NOT use any markdown syntax in the title.
+            The title should be plain text only, without any special formatting characters.`,
         },
         {
           role: "user",
-          content: `Generate a short and relevant title for the following note: "${content}"`,
+          content: `Generate a short and relevant plain text title (NO MARKDOWN) for the following note: "${content}"`,
         },
       ],
       max_tokens: 50,
@@ -167,32 +175,20 @@ export async function generateContent(query: string): Promise<string> {
         {
           role: "system",
           content:
-            "You are a helpful assistant that generates well-formatted content for notes. " +
-            "When creating lists, always use proper formatting: " +
-            "- For unordered lists with categories: use bullet points (•) for categories " +
-            "- For items under categories: indent with a tab and prefix with a dash (-) " +
-            "- For simple unordered lists without categories: use bullet points (•) or dashes (-) " +
-            "- For ordered lists or steps: use numbers (1., 2., etc.) at the start of each line " +
-            "- For any list type: ensure each item is on its own line with proper indentation " +
-            "- When the user asks for steps or instructions, always use numbered lists " +
-            "- When the user asks for a list of items with categories, use bullet points for categories and dashes for items " +
-            "\n\nExample of properly formatted list with categories:\n" +
-            "• Fruits\n" +
-            "    - Apples\n" +
-            "    - Bananas\n" +
-            "    - Oranges\n" +
-            "• Vegetables\n" +
-            "    - Carrots\n" +
-            "    - Broccoli\n" +
-            "    - Spinach\n" +
-            "\n\nAlways follow this exact formatting pattern for categorized lists." +
-            "Preserve line breaks and paragraph structure in your response. " +
-            "For grocery lists, recipes, or step-by-step instructions, use clear formatting with items separated by line breaks. " +
-            "Generate 200 words or less for the user's request.",
+            "You are a helpful assistant that generates well-formatted plain text content for notes. " +
+            "DO NOT use any markdown syntax like #, *, _, -, or backticks. " +
+            "Format your response as plain text only. " +
+            "For lists: " +
+            "- Use simple numbers or letters followed by periods (1., 2., a., b.) " +
+            "- Use simple bullet characters like • or - " +
+            "- Do not use markdown formatting for lists " +
+            "For emphasis: Use ALL CAPS instead of bold or italic markdown " +
+            "For sections: Use plain text headings followed by line breaks, not markdown headings " +
+            "Keep your response concise and focused on the user's request.",
         },
         {
           role: "user",
-          content: `Generate well-formatted content for the following request: "${query}"`,
+          content: `Generate well-formatted plain text content (NO MARKDOWN) for the following request: "${query}"`,
         },
       ],
       max_tokens: 200,
@@ -301,12 +297,18 @@ export const semanticEditNotes = async (
   Make targeted changes that align with the user's intent, while preserving the overall structure and purpose of each note.
   Only make changes that are relevant to the user's request - don't modify unrelated content.
   
-  IMPORTANT: Preserve formatting in your response:
+  IMPORTANT: 
+  - DO NOT use any markdown syntax in your response
+  - Format your response as plain text only
+  - Do not use #, *, _, -, or backticks for formatting
+  - For emphasis, use ALL CAPS instead of bold or italic markdown
+  - For sections, use plain text headings followed by line breaks, not markdown headings
+  - For lists, use simple numbers or bullet characters (•, -) without markdown formatting
+  
+  Preserve the basic formatting in your response:
   - Maintain line breaks between paragraphs
   - For lists, ensure each item is on its own line with appropriate bullet points or numbers
   - Preserve any existing indentation or special formatting
-  
-  Return the edited content for each note. If a note doesn't need changes, return its original content unchanged. Also, don't add any quotations to the response.
   `;
 
   // Create a deep copy of the relevant notes array
