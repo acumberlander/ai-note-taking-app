@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useNoteTranscription from "@/hooks/useNoteTranscription";
 import { Slider, Typography, Tooltip } from "@material-tailwind/react";
 import { useNoteStore } from "@/store/useNoteStore";
@@ -15,18 +15,51 @@ export default function NoteTranscription() {
     handleStopRecording,
   } = useNoteTranscription();
 
+  const [isSupported, setIsSupported] = useState(true);
+
+  useEffect(() => {
+    // Check if MediaRecorder is supported
+    setIsSupported(
+      typeof window !== "undefined" &&
+        (!!window.MediaRecorder || !!require("audio-recorder-polyfill"))
+    );
+  }, []);
+
+  // Toggle recording function
+  const toggleRecording = () => {
+    if (isRecording) {
+      handleStopRecording();
+    } else {
+      handleStartRecording();
+    }
+  };
+
+  if (!isSupported) {
+    return (
+      <div className="mt-4 p-4 bg-white shadow-md rounded-lg">
+        <p className="text-red-500">
+          Your browser doesn't support audio recording. Please use a modern
+          browser.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 p-4 bg-white shadow-md rounded-lg">
       <div className="flex flex-col space-y-6">
-        {/* Voice recording button */}
+        {/* Voice recording button - changed from hold to click */}
         <div>
           <button
-            onMouseDown={handleStartRecording}
-            onMouseUp={handleStopRecording}
+            onClick={toggleRecording}
             disabled={isTranscribing}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400"
+            className={`px-4 py-2 ${
+              isRecording ? "bg-red-600" : "bg-blue-600"
+            } text-white rounded hover:${
+              isRecording ? "bg-red-700" : "bg-blue-700"
+            } disabled:bg-gray-400`}
           >
-            {isRecording ? "Recording..." : "Hold to Speak"}
+            {isRecording ? "Stop Recording" : "Start Recording"}
           </button>
 
           {isTranscribing && (
