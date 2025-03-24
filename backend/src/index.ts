@@ -18,9 +18,9 @@ app.use(express.json());
 
 // Removed the uploads directory creation code
 
-app.use("/api/notes", noteRoutes);
-app.use("/api/transcribe", transcribeRoutes);
-app.use("/api/users", userRoutes);
+app.use("/notes", noteRoutes);
+app.use("/transcribe", transcribeRoutes);
+app.use("/users", userRoutes);
 
 app.use(errorHandler); // Global error handling middleware
 

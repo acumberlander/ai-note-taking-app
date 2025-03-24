@@ -9,7 +9,7 @@ const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
  * @param id
  */
 export const _fetchAllNotes = async (id: string): Promise<Note[]> => {
-  const res = await axios.get(`${baseUrl}/api/notes/user/${id}`);
+  const res = await axios.get(`${baseUrl}/notes/user/${id}`);
   return res.data;
 };
 
@@ -22,7 +22,7 @@ export const _fetchNoteById = async (
   id: number,
   user_id?: string | null
 ): Promise<Note> => {
-  const res = await axios.get(`${baseUrl}/api/notes/${id}`, {
+  const res = await axios.get(`${baseUrl}/notes/${id}`, {
     params: { user_id },
   });
   return res.data;
@@ -33,7 +33,7 @@ export const _fetchNoteById = async (
  * @param note
  */
 export const _createNote = async (note: NewNote): Promise<Note> => {
-  const res = await axios.post(`${baseUrl}/api/notes`, note);
+  const res = await axios.post(`${baseUrl}/notes`, note);
   return res.data;
 };
 
@@ -45,7 +45,7 @@ export const _createUser = async (
   id: string,
   is_anonymous: boolean
 ): Promise<_User> => {
-  const res = await axios.post(`${baseUrl}/api/users`, {
+  const res = await axios.post(`${baseUrl}/users`, {
     id,
     is_anonymous,
   });
@@ -57,7 +57,7 @@ export const _createUser = async (
  * @param id
  */
 export const _fetchUser = async (id: string): Promise<_User> => {
-  const res = await axios.get(`${baseUrl}/api/users/${id}`);
+  const res = await axios.get(`${baseUrl}/users/${id}`);
   console.log("_fetchUser: ", res.data);
   return res.data;
 };
@@ -67,7 +67,7 @@ export const _fetchUser = async (id: string): Promise<_User> => {
  * @param query
  */
 export const _searchNotes = async (query: string): Promise<Note[]> => {
-  const res = await axios.get(`${baseUrl}/api/notes/search`, {
+  const res = await axios.get(`${baseUrl}/notes/search`, {
     params: { query },
   });
   return res.data;
@@ -89,7 +89,7 @@ export const _semanticQuery = async (
   message: string;
   intent: string;
 } | null> => {
-  const res = await axios.post(`${baseUrl}/api/notes/semantic-query`, {
+  const res = await axios.post(`${baseUrl}/notes/semantic-query`, {
     query,
     user_id,
     sensitivity,
@@ -107,7 +107,7 @@ export const _updateNote = async (
   id: number,
   updatedNote: NewNote
 ): Promise<Note> => {
-  const res = await axios.put(`${baseUrl}/api/notes/${id}`, updatedNote);
+  const res = await axios.put(`${baseUrl}/notes/${id}`, updatedNote);
   return res.data;
 };
 
@@ -118,7 +118,7 @@ export const _updateNote = async (
 export const _updateNotes = async (
   notes: Note[]
 ): Promise<{ notes: Note[]; message: string }> => {
-  const res = await axios.put(`${baseUrl}/api/notes`, { notes });
+  const res = await axios.put(`${baseUrl}/notes`, { notes });
   console.log("_updateNotes: ", res.data);
   return res.data;
 };
@@ -128,7 +128,7 @@ export const _updateNotes = async (
  * @param id
  */
 export const _deleteNoteById = async (id: number): Promise<boolean> => {
-  const res = await axios.delete(`${baseUrl}/api/notes/${id}`);
+  const res = await axios.delete(`${baseUrl}/notes/${id}`);
   return res.status === 200;
 };
 
@@ -142,7 +142,7 @@ export const _deleteNotes = async (
   user_id?: string | null
 ): Promise<boolean> => {
   const noteIds = notes.map((note) => note.id);
-  const res = await axios.delete(`${baseUrl}/api/notes`, {
+  const res = await axios.delete(`${baseUrl}/notes`, {
     data: { noteIds, user_id },
   });
   return res.status === 200;
