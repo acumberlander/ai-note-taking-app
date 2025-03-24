@@ -4,6 +4,10 @@ import axios from "axios";
 
 const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+// Configure axios defaults for cross-browser compatibility
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
+
 /**
  * Fetch all notes from the backend.
  * @param id

@@ -10,17 +10,32 @@ dotenv.config();
 
 const app = express();
 
+// Configure CORS with more specific options
+const corsOptions = {
+  origin: [
+    process.env.FRONTEND_URL || "http://localhost:3000", 
+    "https://whisprnotes.vercel.app",
+    /\.vercel\.app$/  // Allow all vercel.app subdomains
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+  maxAge: 86400 // 24 hours
+};
+
+// Apply CORS middleware with options
+app.use(cors(corsOptions));
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-app.use(cors());
-app.use(express.json());
-
-// Removed the uploads directory creation code
-
+// Routes
 app.use("/notes", noteRoutes);
 app.use("/transcribe", transcribeRoutes);
 app.use("/users", userRoutes);
+
+// Add OPTIONS handler for preflight requests
+app.options("*", cors(corsOptions));
 
 app.use(errorHandler); // Global error handling middleware
 

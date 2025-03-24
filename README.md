@@ -154,20 +154,20 @@ npm run start:client
 
 ### Notes API
 
-- `GET /api/notes` - Get all notes
-- `POST /api/notes` - Create a new note
-- `PUT /api/notes/:id` - Update a note
-- `DELETE /api/notes/:id` - Delete a note
-- `DELETE /api/notes` - Delete multiple notes by content similarity
-- `POST /api/notes/semantic-query` - Perform semantic search with intent classification
+- `GET /notes` - Get all notes
+- `POST /notes` - Create a new note
+- `PUT /notes/:id` - Update a note
+- `DELETE /notes/:id` - Delete a note
+- `DELETE /notes` - Delete multiple notes by content similarity
+- `POST /notes/semantic-query` - Perform semantic search with intent classification
 
 ### Transcription API
 
-- `POST /api/transcribe` - Transcribe audio file to text
+- `POST /transcribe` - Transcribe audio file to text
 
 ### User API
 
-- `POST /api/users` - Create or get user data
+- `POST /users` - Create or get user data
 
 ## Building for Production
 

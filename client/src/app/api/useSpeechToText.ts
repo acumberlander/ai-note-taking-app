@@ -50,9 +50,14 @@ export const useSpeechToText = () => {
         const formData = new FormData();
         formData.append("audio", audioBlob, "audio.wav");
 
-        const response = await fetch("http://localhost:5000/api/transcribe", {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const response = await fetch(`${apiUrl}/transcribe`, {
           method: "POST",
           body: formData,
+          credentials: "include",
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
         });
 
         const data = await response.json();
