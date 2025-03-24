@@ -12,16 +12,28 @@ const app = express();
 
 // Configure CORS with more specific options
 const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL || "http://localhost:3000", 
-    "https://whisprnotes.vercel.app",
-    /\.vercel\.app$/  // Allow all vercel.app subdomains
-  ],
+  origin: (origin: string | undefined, callback: Function) => {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || "http://localhost:3000",
+      "https://whisprnotes.vercel.app",
+    ];
+
+    const isAllowed =
+      allowedOrigins.includes(origin || "") ||
+      /\.vercel\.app$/.test(origin || "");
+
+    if (isAllowed || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400,
 };
+
 
 // Apply CORS middleware with options
 app.use(cors(corsOptions));
