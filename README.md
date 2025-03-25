@@ -4,7 +4,7 @@ WhisprNotes is an AI-powered note-taking application with advanced features like
 
 ## Browser Compatibility
 
-**Important Note:** At the moment, this application only works when it's run in the desktop version of Google Chrome. There will be updates in the future to make this app available across other browser platforms on desktop and mobile.
+**Important Note:** At the moment, the semantic AI functionality of this application only works when it's run in the desktop version of Google Chrome. There will be updates in the future to make this app available across other browser platforms on desktop and mobile.
 
 ## Demo
 
