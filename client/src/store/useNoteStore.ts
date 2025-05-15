@@ -86,8 +86,9 @@ export const useNoteStore = create<NoteStore>()(
         aiResponse: value,
       }));
     },
-    setSemanticSensitivity: (sensitivity: number) =>
-      set({ semanticSensitivity: sensitivity }),
+    setSemanticSensitivity: (sensitivity: number) => {
+      set({ semanticSensitivity: sensitivity })
+    },
     fetchNotes: async (user_id: string | null) => {
       set({ noteListLoading: true });
       const data = await _fetchAllNotes(user_id || "");
@@ -95,7 +96,6 @@ export const useNoteStore = create<NoteStore>()(
       set({ allNotes: [...data], noteListLoading: false });
     },
     deleteNote: async (noteId) => {
-      console.log(noteId);
       try {
         const deleteSuccessful = await _deleteNoteById(noteId);
 
@@ -128,7 +128,7 @@ export const useNoteStore = create<NoteStore>()(
       }
     },
     updateNotes: async (oldNotes: Note[]) => {
-      const { notes: updatedNotes, message } = await _updateNotes(oldNotes);
+      const { notes: updatedNotes } = await _updateNotes(oldNotes);
       if (updatedNotes.length > 0) {
         set((state) => ({
           allNotes: state.allNotes.map((note) => {
